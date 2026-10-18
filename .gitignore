@@ -1,0 +1,56 @@
+# --- never in this repository: credentials, personal config, private data ---
+*token*
+!**/token_audit.py
+*credentials*
+.env
+.env.*
+!.env.example
+config.toml
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+pii_patterns.json
+ANSWERS-PRIVATE.md
+
+# --- run data: the kit ships schemas and synthetic examples, never real runs ---
+ops/Runs/
+ops/AppApply-Capture/
+ops/Resume/*.pdf
+ops/scratch/
+*.gsheet
+*.gsheet.tmp
+.manifest.tmp
+
+# --- discover state and reports ---
+discover/state/
+discover/data/
+discover/vendor/find_a_job_ai/daily_job_search.py
+
+# --- résumé build outputs (keep the fictional examples, drop anything built from real files) ---
+resume/**/submittable/
+resume/**/*.pdf
+!resume/examples/*.pdf
+
+# --- dashboard runtime ---
+dashboard/.env*
+!dashboard/.env.example
+dashboard/data/
+dashboard/pgdata/
+
+# --- tooling ---
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+.DS_Store
+Thumbs.db
+*.tmp
+*.sync-conflict-*
+.stfolder
+.stignore
+resume/css/ohmycv-base.css
+!discover/state/**/.gitkeep

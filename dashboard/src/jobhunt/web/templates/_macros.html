@@ -1,0 +1,2 @@
+{% macro chip(a) %}<span class="chip {{ a.cls }}"><i>{{ a.mono }}</i>{{ a.label }}</span>{% endmacro %}
+{% macro status(r) %}<span class="st {{ r.stcls }}"{% if r.reason %} title="{{ r.reason }}"{% endif %}>{{ r.status }}</span>{% endmacro %}

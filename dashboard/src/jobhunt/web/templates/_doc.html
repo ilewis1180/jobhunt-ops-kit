@@ -1,0 +1,17 @@
+<div class="docs">
+  <div class="list">
+    <div style="font-size:16px;font-weight:600;margin-bottom:8px;width:100%">Run docs</div>
+    {% for d in docs %}
+    <a class="{{ 'on' if current and d.name == current.name }}" href="/library?doc={{ d.name }}"
+       hx-get="/library?doc={{ d.name }}" hx-target="#doc" hx-push-url="true">{{ d.name }}</a>
+    {% endfor %}
+  </div>
+  <div class="view">
+    {% if current %}
+    <div class="hint" style="margin-bottom:6px">{{ current.rel_path }} · updated {{ current.modified_at.strftime('%b %d %H:%M') }} UTC · <a href="/files/ops/{{ current.rel_path }}?raw=1">raw</a></div>
+    <div class="prose">{{ doc_html|safe }}</div>
+    {% else %}
+    <div class="empty">No run docs found.</div>
+    {% endif %}
+  </div>
+</div>

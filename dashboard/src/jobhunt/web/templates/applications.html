@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip %}
+{% block title %}Applications · Job Hunt 2026{% endblock %}
+{% block main %}
+<div class="head">
+  <div class="grow">
+    <h1 class="h1"><span class="d-only">Applications</span><span class="m-only">Applied</span></h1>
+    <div class="lede d-only">Every job from scrape to submission.</div>
+  </div>
+  <form id="appfilter" action="/applications" method="get" style="display:contents">
+    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    {% if ats %}<input type="hidden" name="ats" value="{{ ats }}">{% endif %}
+    <input class="search" type="search" name="q" value="{{ q }}" placeholder="Search company, role, Job ID"
+           hx-get="/applications" hx-trigger="input changed delay:300ms, search" hx-target="#rows"
+           hx-include="closest form" hx-push-url="true">
+  </form>
+  <a class="btn d-only" href="/applications.csv?status={{ status|urlencode }}&ats={{ ats|urlencode }}&q={{ q|urlencode }}">Export CSV</a>
+</div>
+
+<div id="usage"{% if live %} hx-get="/applications/usage" hx-trigger="every 30s" hx-swap="innerHTML"{% endif %}>{% include "_usage.html" %}</div>
+
+<div class="filters">
+  <span class="lab">Status</span>
+  {% for s in statuses %}
+  {% set cls = {'Submitted':'s-sub','In progress':'s-ready','Ready':'s-ready','Paused':'s-pause','Skipped':'s-skip','Released':'s-ready','Closed':'s-skip','Saved':'s-skip'}[s] %}
+  <a class="st {{ cls }} {{ 'on' if status == s }}" href="/applications?status={{ '' if status == s else s }}&ats={{ ats|urlencode }}&q={{ q|urlencode }}">{{ s }}</a>
+  {% endfor %}
+  <span class="d-only" style="width:20px"></span>
+  <span class="lab d-only">ATS</span>
+  {% for a in ats_filters %}
+  {% set c = {'Workday':('wd','W'),'LinkedIn Easy Apply':('li','in'),'Greenhouse':('gh','G'),'Ashby':('ash','A'),'Other':('ot','+')}[a] %}
+  <a class="chip {{ c[0] }} {{ 'on' if ats == a }} d-only" href="/applications?ats={{ '' if ats == a else a|urlencode }}&status={{ status|urlencode }}&q={{ q|urlencode }}"><i>{{ c[1] }}</i>{{ a }}</a>
+  {% endfor %}
+</div>
+
+<div id="rows"{% if live %} hx-get="/applications" hx-include="#appfilter" hx-trigger="every 30s" hx-swap="innerHTML"{% endif %}>{% include "_app_rows.html" %}</div>
+<div class="hint d-only">Paused rows show their reason on hover and on the detail page. Queue writes stay with the orchestrator on the Mac.</div>
+{% endblock %}

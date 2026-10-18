@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Accounts and health · Job Hunt 2026{% endblock %}
+{% block main %}
+<div>
+  <h1 class="h1">Accounts and health</h1>
+  <div class="lede">ATS tenant sign-in state from 04-ACCOUNT-LEDGER.md. Sign-in status only: no credentials, and the ledger's Notes column is not shown.</div>
+</div>
+
+<div class="card">
+  <h2>Health</h2>
+  <div class="grid g-health">
+    {% for h in health %}<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span class="st {{ h.cls }}">{{ h.state }}</span><span>{{ h.name }}</span></div>{% endfor %}
+  </div>
+  {% if sync and sync.last.error %}<div class="warn" style="margin-top:10px;font-size:13px">Last sync error: {{ sync.last.error }}</div>{% endif %}
+  {% set w = (sync.last.warnings if sync and sync.last.warnings else (sync.last_data.warnings if sync and sync.last_data else None)) %}{% if w %}<div class="hint" style="margin-top:10px">Sync warnings: {{ w|join('; ') }}</div>{% endif %}
+  <div class="hint" style="margin-top:10px">The browser on the apply host is checked by a TCP connect only. The portal never talks to the browser.</div>
+</div>
+
+<div class="table d-only">
+  <div class="tr th t"><div>Tenant</div><div>ATS</div><div>State</div><div>Since</div><div>Jobs waiting</div></div>
+  {% for t in tenants %}
+  <div class="tr t">
+    <div style="word-break:break-all">{{ t.tenant_key }}</div>
+    <div>{{ t.ats }}</div>
+    <div><span class="st {{ 's-sub' if 'exists' in t.state or 'no login' in t.state else ('s-pause' if 'gate' in t.state or 'CAPTCHA' in t.state or 'email-only' in t.state else 's-ready') }}">{{ t.state }}</span></div>
+    <div>{{ t.since }}</div>
+    <div class="muted">{{ t.waiting }}</div>
+  </div>
+  {% else %}
+  <div class="tr t"><div class="muted" style="grid-column:1/-1">No tenants in the ledger.</div></div>
+  {% endfor %}
+</div>
+<div class="m-only">
+  {% for t in tenants %}
+  <div class="mcard"><div class="top"><div class="co" style="font-size:14px;word-break:break-all">{{ t.tenant_key }}</div></div>
+    <div class="bot"><span class="st s-ready">{{ t.state }}</span><span class="muted">{{ t.ats }} · {{ t.since }}</span></div></div>
+  {% endfor %}
+</div>
+{% endblock %}

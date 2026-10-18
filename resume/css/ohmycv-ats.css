@@ -1,0 +1,6 @@
+/* ATS parsing overrides - keep text machine-extractable. Not for the display resumes. */
+#vue-smart-pages-preview h1 { letter-spacing: normal !important; word-spacing: normal !important; }
+#vue-smart-pages-preview, #vue-smart-pages-preview * {
+  hyphens: none !important; -webkit-hyphens: none !important;
+  -moz-hyphens: none !important; -ms-hyphens: none !important;
+}

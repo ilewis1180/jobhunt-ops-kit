@@ -1,0 +1,70 @@
+# applicant-profile.example.yml: the machine-readable twin of ANSWERS-PRIVATE.md for a résumé-building or form-filling
+# worker. Copy to applicant-profile.yml (git-ignored) and fill in. Keep it in step with the answers file; the two
+# drifting apart (a role's end month, a dropped row) was a real failure mode.
+identity:
+  full_name: Alex Example
+  first_name: Alex
+  last_name: Example
+  preferred_name: Alex
+  email: alex@example.com
+  phone: "555-0100-0000"
+  linkedin: https://www.linkedin.com/in/alex-example/
+  website: ""
+address:
+  street: "100 Example Street"
+  city: Denver
+  state: CO
+  zip: "80200"
+  country: United States
+work_authorization:
+  authorized: true
+  sponsorship_needed: false
+  citizenship: United States
+screening:
+  how_heard: Company Website
+  relocation: true
+  travel_percent_max: 100
+  on_call_weekend_physical: true
+  background_check: true
+  pay_structures_accepted: [commission_only, contract_1099, part_time]
+compensation:
+  text_field: Negotiable
+  required_numeric_base: 120000
+  posted_range_rule: "answer the posted maximum when a range is shown; else required_numeric_base"
+consents:
+  data_processing: accept
+  international_transfer: accept
+  privacy_policy: accept
+  terms: accept
+  sms: decline
+  interview_recording: accept
+demographics:
+  default: decline
+resumes:
+  - file: Example-Sales.pdf
+    role_families: [sales, account management, channel, solutions consulting]
+  - file: Example-Medical.pdf
+    role_families: [medical device, pharmaceutical, diagnostics, laboratory]
+work_history:            # every form's history section must match the résumé the job gets
+  - employer: Northwind Software
+    title: Account Executive
+    start: 2021-03
+    end: null            # current role: no end date
+    location: Denver, CO
+  - employer: Contoso Networks
+    title: Territory Account Manager
+    start: 2016-06
+    end: 2021-02
+    location: Phoenix, AZ
+  - employer: Fabrikam Communications
+    title: Inside Sales Representative
+    start: 2014-08
+    end: 2016-05
+    location: Phoenix, AZ
+education:
+  - school: Example State University
+    degree: Bachelor of Business Administration
+    field: Business
+    start: 2010
+    end: 2014
+    closed_list_fallback: Other

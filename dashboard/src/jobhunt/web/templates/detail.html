@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip, status %}
+{% set r = a.row or {} %}
+{% set company = r.company or a.board.company or a.job.company or 'Unknown company' %}
+{% block title %}{{ company }} · Job Hunt 2026{% endblock %}
+{% block main %}
+<div>
+  <a href="/applications" style="font-size:13px">Back to Applications</a>
+  <div style="display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap">
+    <h1 class="h1">{{ company }}</h1>
+    {% if a.row %}{{ status(a.row) }} {{ chip(a.row.ats) }}{% endif %}
+  </div>
+  <div class="lede">{{ r.role or a.job.title or '' }}{% if a.summary %} · {{ a.summary }}{% else %} · Job ID {{ (a.job.job_id or a.board.job_id or (a.jd or {}).get('job_id')) }}{% endif %}</div>
+  {% if r.reason %}<div class="warn" style="margin-top:6px;font-size:13px">{{ r.reason }}</div>{% endif %}
+</div>
+
+<div class="grid g-detail">
+  <div class="card">
+    <h2>Audit trail</h2>
+    <div class="trail">
+      {% for step, note in a.trail %}
+      <div class="step"><div class="dot"></div><div><div class="t1">{{ step }}</div><div class="t2">{{ note }}</div></div></div>
+      {% else %}
+      <div class="empty">No attempt yet{% if a.board.state %}. Board state: {{ a.board.state }}{% endif %}.</div>
+      {% endfor %}
+    </div>
+    {% if a.attempt %}
+    <div class="proof-block">
+      <div class="proof-h">Proof</div>
+      {% if proof %}
+      <div class="proof">
+        {% for p in proof %}
+        <a href="/files/ops/{{ p.rel }}" target="_blank" rel="noopener" title="{{ p.label }}: open full size">
+          <img src="/files/ops/{{ p.rel }}" alt="{{ p.label }}" loading="lazy">
+          <span>{{ p.label }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="hint">No proof screenshots for this attempt. Lanes save a review page, each free-text field, and the confirmation once the runbook update is in.</div>
+      {% endif %}
+    </div>
+    {% endif %}
+    <div class="links">
+      {% if a.attempt and a.attempt.trace_file %}<a href="/files/ops/AppApply-Capture/{{ a.attempt.trace_file }}">Open trace file</a>{% endif %}
+      {% for f in a.files if f.kind in ('PREP', 'INTENT', 'paused', 'skipped') %}
+      <a href="/files/ops/{{ f.rel_path }}">{{ {'PREP':'PREP card','INTENT':'INTENT (ready-to-submit ledger)','paused':'Paused note','skipped':'Skipped note'}[f.kind] }} · {{ f.run_id or '' }}</a>
+      {% endfor %}
+      {% if a.attempts|length > 1 %}<span class="hint">{{ a.attempts|length }} attempts; showing the latest.</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>What we entered</h2>
+    <div class="hint" style="margin-bottom:10px">Each answer shows where it came from. Amber rows were judgment calls. Values are the trace's safe value or its pointer into 02.</div>
+    {% for x in a.answers %}
+    <div class="ans"><div class="qq">{{ x.q }}</div><div class="aa">{{ x.a }}</div><div><span class="st {{ x.cls }}" title="{{ x.key }}">{{ x.src }}</span></div></div>
+    {% else %}
+    <div class="empty">No answers recorded for this job yet.</div>
+    {% endfor %}
+  </div>
+
+  <div class="col" style="gap:20px">
+    <div class="card">
+      <h2>Résumé {{ 'sent' if a.attempt else 'planned' }}</h2>
+      {% set res = (a.attempt or {}).get('resume') or a.board.resume %}
+      {% if res %}
+      <div style="font-size:14px;font-weight:500">{{ res }}</div>
+      <div class="hint" style="margin:4px 0 10px">From the Resume/ folder on the Mac, synced read-only.</div>
+      <a href="/files/ops/Resume/{{ res }}" style="font-size:13px">Open PDF</a>
+      {% else %}<div class="empty">Not recorded.</div>{% endif %}
+    </div>
+    <div class="card" id="jd">
+      {% set posting = (a.job.apply_url or a.board.apply_url or a.job.linkedin_url)|http_only %}
+      <h2><span class="grow">Job description</span>{% if posting %}<a href="{{ posting }}" rel="noopener noreferrer" target="_blank" style="font-size:13px">Open posting</a>{% endif %}</h2>
+      {% if a.job.salary_raw or a.job.location %}
+      <div class="hint" style="margin-bottom:8px">{% if a.job.salary_raw %}Pay: {{ a.job.salary_raw }}{% endif %}{% if a.job.salary_raw and a.job.location %} · {% endif %}{{ a.job.location or '' }}</div>
+      {% endif %}
+      {% if jd_html %}<div class="prose jd">{{ jd_html|safe }}</div>{% else %}<div class="empty">Not in the JD archive files yet.</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

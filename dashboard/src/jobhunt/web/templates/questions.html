@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Questions · Job Hunt 2026{% endblock %}
+{% block main %}
+<div class="head">
+  <div class="grow">
+    <h1 class="h1">Questions answered</h1>
+    <div class="lede">The question bank: {{ total }} distinct questions seen on application forms, and which answer key fills each one.</div>
+  </div>
+  <form action="/questions" method="get" style="display:contents">
+    <input class="search" type="search" name="q" value="{{ q }}" placeholder="Search questions or answer keys"
+           hx-get="/questions" hx-trigger="input changed delay:300ms, search" hx-target="#qrows" hx-push-url="true">
+  </form>
+</div>
+<div id="qrows">{% include "_question_rows.html" %}</div>
+<div class="hint">Answers for a specific application are on its detail page (Applications, then Audit trail).</div>
+{% endblock %}

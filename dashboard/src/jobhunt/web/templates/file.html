@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} · Job Hunt 2026{% endblock %}
+{% block main %}
+<div>
+  <h1 class="h1" style="font-size:26px;word-break:break-all">{{ name }}</h1>
+  <div class="lede">{{ root }}/{{ rel }} · read-only · <a href="/files/{{ root }}/{{ rel }}?raw=1">raw</a></div>
+</div>
+{% if body %}
+<div class="card prose">{{ body|safe }}</div>
+{% else %}
+<pre class="raw">{{ text }}</pre>
+{% endif %}
+{% endblock %}

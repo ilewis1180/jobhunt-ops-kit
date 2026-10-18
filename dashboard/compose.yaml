@@ -1,0 +1,101 @@
+# jobhunt dashboard: three containers. The browser that applies is NOT here: it runs on the applying machine.
+#
+# Read-only three ways: the mirrored folders are receive-only, the mounts below are :ro, and the app's database
+# role (jobhunt_app) can only SELECT. No public exposure: bind the app to a private address (JOBHUNT_BIND, default
+# loopback). Postgres stays on loopback. The portal has no login: never bind it to a public interface.
+#
+# Each service reads only its own env file under secrets/ (git-ignored, created by scripts/new-secrets.py). Paths,
+# the bind address and the spreadsheet ids come from .env (copy .env.example).
+#
+# Bring-up (first time): cp .env.example .env ; python scripts/new-secrets.py ; docker compose up -d --build
+# Local demo with the kit's sample data: the defaults in .env.example point at ./sample-data.
+
+name: jobhunt-dashboard
+
+services:
+  db:
+    image: postgres:16
+    container_name: jobhunt-dashboard-db
+    restart: unless-stopped
+    env_file: secrets/db.env
+    environment:
+      POSTGRES_DB: jobhunt
+      POSTGRES_USER: jobhunt_admin
+      TZ: UTC
+    ports:
+      - "127.0.0.1:${JOBHUNT_DB_PORT:-5439}:5432"
+    volumes:
+      - jobhunt-pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobhunt_admin -d jobhunt"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  sync:
+    build: .
+    image: jobhunt-dashboard:local
+    container_name: jobhunt-dashboard-sync
+    restart: unless-stopped
+    command: ["python", "-m", "jobhunt.sync"]
+    env_file: secrets/sync.env
+    environment:
+      JOBHUNT_DB_HOST: db
+      JOBHUNT_DB_USER: jobhunt_sync
+      JOBHUNT_APP_NAME: jobhunt-dashboard-sync
+      JOBHUNT_SYNC_INTERVAL: "${JOBHUNT_SYNC_INTERVAL:-600}"
+      JOBHUNT_OPS_DIR: /data/ops
+      JOBHUNT_CONTENT_DIR: /data/content
+      JOBHUNT_TZ: "${JOBHUNT_TZ:-UTC}"
+      # Health tile only: a TCP connect to the applying browser's CDP port, if it is reachable from here.
+      JOBHUNT_CDP_HOST: "${JOBHUNT_CDP_HOST:-host.docker.internal}"
+      JOBHUNT_CDP_PORT: "${JOBHUNT_CDP_PORT:-9222}"
+      # Google Sheets through a dedicated read-only service account (spreadsheets.readonly, viewer on the two sheets).
+      # Its key is mounted into THIS container only. Leave the ids empty to run from files alone.
+      JOBHUNT_GOOGLE_SA_FILE: /run/secrets/google-sa.json
+      JOBHUNT_QUEUE_SHEET_ID: "${JOBHUNT_QUEUE_SHEET_ID:-}"
+      JOBHUNT_JD_SHEET_ID: "${JOBHUNT_JD_SHEET_ID:-}"
+    volumes:
+      - "${JOBHUNT_OPS_HOST_DIR:-./sample-data/ops}:/data/ops:ro"
+      - "${JOBHUNT_CONTENT_HOST_DIR:-./sample-data/content}:/data/content:ro"
+      - "${JOBHUNT_GOOGLE_SA_HOST_FILE:-./secrets/google-sa.json}:/run/secrets/google-sa.json:ro"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    image: jobhunt-dashboard:local
+    container_name: jobhunt-dashboard-app
+    restart: unless-stopped
+    env_file: secrets/app.env
+    environment:
+      JOBHUNT_DB_HOST: db
+      JOBHUNT_DB_USER: jobhunt_app
+      JOBHUNT_APP_NAME: jobhunt-dashboard-app
+      JOBHUNT_OPS_DIR: /data/ops
+      JOBHUNT_CONTENT_DIR: /data/content
+      JOBHUNT_TZ: "${JOBHUNT_TZ:-UTC}"
+      JOBHUNT_RESUME_PREFIX: "${JOBHUNT_RESUME_PREFIX:-}"
+      JOBHUNT_ATS_SCANNER_URL: "${JOBHUNT_ATS_SCANNER_URL:-}"
+    ports:
+      - "${JOBHUNT_BIND:-127.0.0.1}:${JOBHUNT_PORT:-4110}:4110"
+    volumes:
+      - "${JOBHUNT_OPS_HOST_DIR:-./sample-data/ops}:/data/ops:ro"
+      - "${JOBHUNT_CONTENT_HOST_DIR:-./sample-data/content}:/data/content:ro"
+    depends_on:
+      db:
+        condition: service_healthy
+      sync:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:4110/healthz', timeout=3).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  jobhunt-pgdata:
+    name: jobhunt-dashboard-pgdata

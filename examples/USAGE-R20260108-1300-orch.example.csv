@@ -1,0 +1,4 @@
+run_id,phase,session,session_run_id,model,started_at,updated_at,input_tokens,output_tokens,cache_creation_tokens,cache_read_tokens,jobs_attempted,jobs_submitted,weekly_pct_start,weekly_pct_now,weekly_resets_at
+R20260108-1300-orch,3,orch,,model-a,2026-01-08T19:00:00Z,2026-01-08T21:30:00Z,120000,9000,400000,18000000,,,,,
+R20260108-1300-orch,3,lane1-1300,R20260108-1300-apply1,model-a,2026-01-08T19:05:00Z,2026-01-08T21:20:00Z,80000,12000,600000,41000000,2,2,,,
+R20260108-1300-orch,3,lane2-1300,R20260108-1300-apply2,model-a,2026-01-08T19:06:00Z,2026-01-08T20:10:00Z,30000,4000,200000,9000000,1,0,,,

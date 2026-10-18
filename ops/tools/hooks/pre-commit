@@ -1,0 +1,32 @@
+#!/bin/bash
+# Pre-commit PII gate. Installed by ops/tools/hooks/install.sh as .git/hooks/pre-commit.
+# Scans the STAGED content of every added/copied/modified/renamed file with tools/pii_scan.py and blocks the commit
+# on any hit, or if the PII patterns cannot be loaded (pii_scan fails closed with exit 2).
+# Exempt: ANSWERS-PRIVATE.md itself (it is the private source the patterns are built from).
+# Bypass for a reviewed false positive: git commit --no-verify (say so in the commit message).
+set -u
+REPO=$(git rev-parse --show-toplevel)
+EXEMPT_RE='(^|/)ANSWERS-PRIVATE\.md$'
+TMP=$(mktemp -d "${TMPDIR:-/tmp}/pii-precommit.XXXXXX")
+trap 'rm -rf "$TMP"' EXIT
+n=0
+while IFS= read -r -d '' path; do
+  [[ "$path" =~ $EXEMPT_RE ]] && continue
+  mkdir -p "$TMP/$(dirname "$path")"
+  git show ":$path" > "$TMP/$path" 2>/dev/null || continue
+  n=$((n+1))
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+[ "$n" -eq 0 ] && exit 0
+cd "$TMP"
+if [ -n "${JOBHUNT_HOOK_PATTERNS:-}" ]; then
+  out=$(python3 "$REPO/ops/tools/pii_scan.py" --patterns "$JOBHUNT_HOOK_PATTERNS" . 2>&1); rc=$?
+else
+  out=$(python3 "$REPO/ops/tools/pii_scan.py" . 2>&1); rc=$?
+fi
+if [ "$rc" -ne 0 ]; then
+  echo "pre-commit: pii_scan blocked this commit (exit $rc) — staged files:" >&2
+  echo "$out" | sed 's#^\./##' >&2
+  echo "Unstage or fix the file(s); a reviewed false positive can go in with git commit --no-verify." >&2
+  exit 1
+fi
+exit 0

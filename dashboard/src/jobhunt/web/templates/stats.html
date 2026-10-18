@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Stats · Job Hunt 2026{% endblock %}
+{% block main %}
+<div class="head">
+  <div class="grow">
+    <h1 class="h1">Stats</h1>
+    <div class="lede d-only">From LinkedIn save to submitted. The window switch applies to the per-day, how-applied and effort cards (from outcomes.csv).</div>
+  </div>
+  <div class="filters">
+    {% for w, label in [('all','All time'),('week','This week'),('today','Today')] %}
+    <a class="st s-ready {{ 'on' if s.window == w }}" href="/stats?window={{ w }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="grid g-4">
+  {% for t in s.tiles %}
+  <div class="tile"><div class="l">{{ t.label }}</div><div class="n">{{ t.n }}</div><div class="s d-only">{{ t.sub }}</div></div>
+  {% endfor %}
+</div>
+
+<div class="grid g-2b">
+  <div class="card">
+    <h2>From LinkedIn to submitted</h2>
+    <div class="hint" style="margin-bottom:14px">Each bar is the all-time count at that step, from the Raw and Queue tabs and the run files.</div>
+    {% for f in s.funnel %}
+    <div class="bar-row"><div>{{ f.label }}</div><div class="bar"><div style="width:{{ f.w }}"></div></div><div class="num">{{ f.n }}</div></div>
+    {% endfor %}
+  </div>
+  <div class="card">
+    <h2>Why jobs were skipped</h2>
+    <div class="hint" style="margin-bottom:14px">From the Queue's Flags on Skipped and Closed rows (all time). A job can carry more than one flag.</div>
+    {% for d in s.skips %}
+    <div class="bar-row"><div>{{ d.label }}</div><div class="bar thin"><div style="width:{{ d.w }}"></div></div><div class="num">{{ d.n }}</div></div>
+    {% else %}
+    <div class="empty">No skipped jobs on the Queue.</div>
+    {% endfor %}
+    {% if s.halts %}
+    <h2 style="margin-top:18px">Why apply attempts stopped</h2>
+    {% for d in s.halts %}
+    <div class="bar-row"><div>{{ d.label|capitalize }}</div><div class="bar thin"><div style="width:{{ d.w }}"></div></div><div class="num">{{ d.n }}</div></div>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid g-3">
+  <div class="card">
+    <h2>Submitted per day</h2>
+    <div class="days">
+      {% for d in s.days %}
+      <div><div style="font-weight:600">{{ d.n }}</div><div class="b" style="height:{{ d.h }}"></div><div class="muted">{{ d.d }}</div></div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card">
+    <h2>How applied</h2>
+    {% for a in s.ats %}
+    <div class="bar-row ats"><div>{{ a.label }}</div><div class="bar xs"><div style="width:{{ a.w }};background:{{ a.c }}"></div></div><div class="num">{{ a.n }}</div></div>
+    {% else %}
+    <div class="empty">No submissions in this window.</div>
+    {% endfor %}
+  </div>
+  <div class="card">
+    <h2>Effort</h2>
+    {% for label, v in s.effort %}
+    <div class="row" style="padding:8px 0"><div class="grow">{{ label }}</div><div style="font-weight:600">{{ v }}</div></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

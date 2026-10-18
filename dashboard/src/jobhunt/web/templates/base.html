@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false}'>
+  <title>{% block title %}Job Hunt 2026{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/htmx.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+<div class="shell">
+  <nav class="side">
+    <div class="brand">Job Hunt 2026</div>
+    <a class="nav {{ 'on' if nav == 'today' }}" href="/">Today</a>
+    <a class="nav {{ 'on' if nav == 'applications' }}" href="/applications">Applications</a>
+    <a class="nav {{ 'on' if nav == 'outcomes' }}" href="/outcomes">Outcomes</a>
+    <a class="nav {{ 'on' if nav == 'stats' }}" href="/stats">Stats</a>
+    <a class="nav {{ 'on' if nav == 'questions' }}" href="/questions">Questions answered</a>
+    <a class="nav {{ 'on' if nav == 'library' }}" href="/library">Library</a>
+    <a class="nav {{ 'on' if nav == 'accounts' }}" href="/accounts">Accounts and health</a>
+    <div class="foot">Read-only. Approvals happen in each lane's chat, not here.</div>
+  </nav>
+  <main class="main">
+    {# Run mode: Today re-fetches itself every 30 s; the next fetch without a live run drops these attributes,
+       so polling stops on its own. Applications polls only its rows (applications.html) to keep the search box. #}
+    <div id="page"{% if live and nav == 'today' %} hx-get="/" hx-trigger="every 30s" hx-select="#page" hx-swap="outerHTML"{% endif %}>
+      {% if live %}<div class="livebar"><span class="st s-sub">Live run</span>{{ live.run_id }} · refreshing every 30 s</div>{% endif %}
+      {% block main %}{% endblock %}
+    </div>
+  </main>
+</div>
+<nav class="tabs">
+  <a class="tab {{ 'on' if nav == 'today' }}" href="/">Today</a>
+  <a class="tab {{ 'on' if nav == 'applications' }}" href="/applications">Applied</a>
+  <a class="tab {{ 'on' if nav == 'outcomes' }}" href="/outcomes">Outcomes</a>
+  <a class="tab {{ 'on' if nav == 'stats' }}" href="/stats">Stats</a>
+  <a class="tab {{ 'on' if nav in ('library', 'accounts', 'questions') }}" href="/library">Library</a>
+</nav>
+</body>
+</html>

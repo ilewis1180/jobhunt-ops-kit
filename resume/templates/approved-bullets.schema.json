@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/jobhunt-ops-kit/approved-bullets.schema.json",
+  "title": "Approved bullets",
+  "description": "The résumé bullets the applicant approved word for word. A résumé worker builds only from entries with status approved; text_ats is used exactly as written (a new wording is a new bullet). Every figure must appear in the Facts source of truth (facts_refs).",
+  "type": "object",
+  "required": ["version", "facts_source", "roles", "bullets"],
+  "properties": {
+    "version": {"type": "integer", "minimum": 1},
+    "facts_source": {"type": "string", "description": "path of the Facts file every figure traces to"},
+    "retired_claims": {"type": "array", "items": {"type": "string"}, "description": "wordings never allowed on any document"},
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "employer", "title", "start"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+          "employer": {"type": "string"},
+          "title": {"type": "string"},
+          "start": {"type": "string", "pattern": "^\\d{4}(-\\d{2})?$"},
+          "end": {"type": ["string", "null"], "pattern": "^\\d{4}(-\\d{2})?$"},
+          "location": {"type": "string"},
+          "section": {"type": "string", "enum": ["experience", "civic", "speaking", "education", "certification"]}
+        }
+      }
+    },
+    "layout": {
+      "type": "array",
+      "description": "ordered résumé lines that are not bullets (summary, skills, headings), per variant",
+      "items": {
+        "type": "object",
+        "required": ["variant", "section", "text"],
+        "properties": {"variant": {"type": "string"}, "section": {"type": "string"}, "text": {"type": "string"}}
+      }
+    },
+    "bullets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "role_id", "text_ats", "status", "tags", "facts_refs"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+          "role_id": {"type": "string"},
+          "text_ats": {"type": "string", "description": "the sendable wording, verbatim; 18-32 words, verb + scope + mechanism + quantified outcome"},
+          "status": {"type": "string", "enum": ["approved", "held", "excluded"]},
+          "hold_reason": {"type": "string", "description": "required when status is held"},
+          "tags": {"type": "array", "items": {"type": "string", "enum": ["CONFIRMED", "ESTIMATE", "OPEN"]}},
+          "facts_refs": {"type": "array", "items": {"type": "string"}, "description": "Facts headings or line anchors that support every figure"},
+          "replaces": {"type": "string", "description": "id of the bank bullet this wording was reworded from; both stay approved, never both on one résumé"},
+          "variants": {"type": "array", "items": {"type": "string"}, "description": "which résumé variants may use it"},
+          "motion": {"type": "string", "description": "bench grouping: new-logo, expansion, channel, public-sector, pre-sales, ..."},
+          "approved_on": {"type": "string", "format": "date"}
+        },
+        "allOf": [
+          {"if": {"properties": {"status": {"const": "held"}}}, "then": {"required": ["hold_reason"]}},
+          {"if": {"properties": {"status": {"const": "approved"}}}, "then": {"properties": {"tags": {"not": {"contains": {"const": "OPEN"}}}}}}
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,2 @@
+run_id,attempt_id,job_id,company,ats,tenant,outcome,confirmation_method,started_at,ended_at,duration_s,pages,fields,required_fields,human_interventions,halt_reason,trace_file
+R20260108-1300-apply1,JT-194799d947-a1,JT-194799d947,"Acme, Inc.",lever,jobs.lever.co/acme,submitted,redirect_confirmation,2026-01-08T20:10:00Z,2026-01-08T20:16:30Z,390,1,11,6,approval,,traces/R20260108-1300-apply1/TRACE-JT-194799d947-a1.jsonl

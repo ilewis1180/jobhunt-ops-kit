@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "facts_source": "3-Bullet-Bank/Facts-Source-of-Truth.md",
+  "retired_claims": ["managed a team of 15 (never held a team)"],
+  "roles": [
+    {"id": "northwind-ae", "employer": "Northwind Software", "title": "Account Executive", "start": "2021-03", "end": null, "location": "Denver, CO", "section": "experience"},
+    {"id": "contoso-tam", "employer": "Contoso Networks", "title": "Territory Account Manager", "start": "2016-06", "end": "2021-02", "location": "Phoenix, AZ", "section": "experience"}
+  ],
+  "layout": [
+    {"variant": "sales", "section": "summary", "text": "Enterprise account executive with 10 years selling software and network services to public-sector and commercial accounts."}
+  ],
+  "bullets": [
+    {"id": "nw-acv-growth", "role_id": "northwind-ae", "status": "approved", "tags": ["CONFIRMED"], "facts_refs": ["Sales record > Northwind Software > ACV by year"],
+     "text_ats": "Grew a 40-account enterprise territory from $1.8M to $3.1M in annual contract value over three years by rebuilding the pipeline around multi-year platform agreements.", "variants": ["sales"], "motion": "expansion", "approved_on": "2026-01-15"},
+    {"id": "nw-uc-rfp", "role_id": "northwind-ae", "status": "approved", "tags": ["CONFIRMED"], "facts_refs": ["Flagship deals > state agency UC RFP"],
+     "text_ats": "Won the state agency's unified communications RFP against four incumbents, a $2.4M three-year award.", "variants": ["sales"], "motion": "public-sector"},
+    {"id": "ct-partner-pipeline", "role_id": "contoso-tam", "status": "held", "hold_reason": "the 30 percent share is an estimate the applicant has not confirmed", "tags": ["ESTIMATE"], "facts_refs": ["Operating metrics > partner-sourced pipeline"],
+     "text_ats": "Built a partner program with two regional integrators that sourced roughly 30 percent of new pipeline in its second year."}
+  ]
+}

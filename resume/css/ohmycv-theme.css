@@ -1,0 +1,63 @@
+/* ---------------------------------------------------------------
+   Column-alignment overrides for markdown-resume (Oh My CV lineage)
+   three-column entries. Original work of this kit's authors (MIT).
+
+   Paste at the BOTTOM of the editor's CSS tab, keeping the base
+   stylesheet that is already there above it. Do NOT paste this
+   into an emptied CSS tab: it is overrides only.
+   --------------------------------------------------------------- */
+
+/* Why this exists ------------------------------------------------
+   The stock stylesheet lays each entry out as
+       dl { display: flex }
+       dl dt, dl dd:not(:last-child) { flex: 1 }
+   `flex: 1` sets flex-basis to 0 but content still pulls the final
+   widths around, so the location column starts at a different x on
+   every row: "Acme Corp · Denver, CO" lands well right of
+   "Example Co · Remote". Pinning column 1 to a fixed percentage
+   makes column 2 start at the same x on every entry, and pinning
+   column 3 makes the dates end flush right on every entry.
+   ---------------------------------------------------------------- */
+
+#vue-smart-pages-preview dl {
+  column-gap: 12px;
+  align-items: baseline;
+}
+
+/* Column 1 — job title / degree / board seat */
+#vue-smart-pages-preview dl dt {
+  flex: 0 0 44%;
+}
+
+/* Column 2 — company · location */
+#vue-smart-pages-preview dl dd:not(:last-child) {
+  flex: 1 1 auto;
+}
+
+/* Column 3 — dates, flush right, never wrapped */
+#vue-smart-pages-preview dl dd:last-child {
+  flex: 0 0 auto;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* A long job title wraps inside its 44% column. Keep those lines
+   left-aligned and unhyphenated — the preview sets `hyphens: auto`,
+   which otherwise breaks words mid-title. */
+#vue-smart-pages-preview dl dt,
+#vue-smart-pages-preview dl dd {
+  text-align: left;
+  hyphens: none;
+  -webkit-hyphens: none;
+}
+
+#vue-smart-pages-preview dl dd:last-child {
+  text-align: right;
+}
+
+/* The stock sheet sets `p { margin: 0 }`, so the italic summary under a group
+   header (### Employer) sits flush against the first entry beneath it. Give that
+   one paragraph breathing room without loosening every other paragraph. */
+#vue-smart-pages-preview h3 + p {
+  margin-bottom: 0.55em;
+}

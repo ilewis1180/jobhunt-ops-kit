@@ -1,0 +1,48 @@
+# jobhunt-ops-kit configuration. Copy to config.toml (git-ignored) and fill in your own values.
+# Every tool reads this through ops/tools/common.py. Environment variables override it:
+#   JOBHUNT_OPS, JOBHUNT_CONFIG, JOBHUNT_PII_PATTERNS, JOBHUNT_GOOGLE_TOKEN, JOBHUNT_MAIL_DIR, JOBHUNT_TZ
+# Nothing in this file is secret, but config.toml names your own folders and spreadsheets, so it stays out of git.
+
+[paths]
+# Data root: the folder that holds Runs/, AppApply-Capture/, Resume/ and the .gsheet pointer files.
+# Empty = the ops/ folder of this repository.
+ops_root = ""
+# Private PII pattern file (see ops/tools/pii_patterns.example.json). Keep it OUTSIDE the repository, mode 600.
+pii_patterns = "~/.config/jobhunt/pii_patterns.json"
+# Read-only copy of a Google OAuth "authorized user" token with the drive scope (client_id, client_secret,
+# refresh_token). Keep it OUTSIDE the repository, mode 600. Never commit it.
+google_token = "~/.config/jobhunt/google_token.json"
+# Folder where your mail exporter drops job-threads.csv and export-status.json (see docs/11-data-model.md).
+mail_export_dir = "~/Job-Mail-Export"
+# Where import-inbox.py looks for files written by a remote session (a cloud-drive inbox). Empty = none.
+inbox_dir = ""
+# Backup target for ops/tools/backup.sh (a cloud-synced folder works) and its log.
+backup_dir = ""
+backup_log = "~/Library/Logs/jobhunt-ops-backup.log"
+# Claude Code transcripts for token_audit.py / usage_report.py. The project folder name is derived from your
+# working directory, e.g. "-Users-<you>-jobhunt-ops-kit".
+transcripts_glob = "~/.claude/projects/-Users-<you>-<project>*/*.jsonl"
+
+[sheets]
+# The two Google Sheets: the Job Queue (tabs Queue and Raw) and the JD Archive. The tools refuse any other id.
+job_queue_id = "REPLACE_WITH_JOB_QUEUE_SPREADSHEET_ID"
+jd_archive_id = "REPLACE_WITH_JD_ARCHIVE_SPREADSHEET_ID"
+queue_tab = "Queue"
+
+[browser]
+# The dedicated Chrome profile every Phase 3 session uses, and the browser-extension deviceId that identifies it
+# (profile names change on an extension reconnect; the deviceId does not).
+profile_name = "App Apply"
+profile_device_id = ""
+# The light page a lane opens first to prove it owns its window (docs/04-parallel-apply.md §4).
+lane_tab_url = "https://example.com/"
+
+[run]
+# IANA zone for run ids and the human timestamps in board output. Run ids use this zone's date.
+timezone = "UTC"
+# First day of your Queue era: mail threads older than this are never listed for review by mail_track.py.
+queue_era_start = "2026-01-01"
+
+[dashboard]
+# Where the dashboard host receives the ops mirror (informational; the sync itself is Syncthing or similar).
+mirror_note = "receive-only mirror of ops_root, tools/ and .git excluded"

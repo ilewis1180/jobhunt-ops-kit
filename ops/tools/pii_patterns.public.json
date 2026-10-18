@@ -1,0 +1,45 @@
+{
+  "_comment": "Public-safe gate for THIS repository (CI and the pre-push check). Shapes only: e-mail addresses, phone numbers, street addresses, spreadsheet ids, plus a few strings that must never appear in the tree. Literal strings are written with a one-character class so a plain grep for them stays empty. Your private pattern file (pii_patterns.example.json shape) adds your own values and lives outside the repo. Reserved example domains (example.com/org/net) and streets named Example/Sample are allowed, so fictional fixtures pass.",
+  "patterns": [
+    {
+      "name": "email",
+      "regex": "[A-Za-z0-9._%+-]+(?:@|%40)(?!example\\.(?:com|org|net)\\b|example\\.invalid\\b)[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
+    },
+    {
+      "name": "phone-us",
+      "regex": "(?<![\\w.-])(?:\\+?1[\\s.-]?)?(?:\\(\\d{3}\\)\\s?|\\d{3}[\\s.-])\\d{3}[\\s.-]\\d{4}(?![\\w-])"
+    },
+    {
+      "name": "street-address",
+      "regex": "(?-i:\\b\\d{1,6}\\s+(?!Example\\b|Sample\\b)(?:[A-Z][a-z]+\\s+){1,3}(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Dr|Drive|Ln|Lane|Way|Ct|Court|Pkwy|Parkway|Hwy|Pl|Place|Cir|Circle|Trl|Trail)\\b\\.?)"
+    },
+    {
+      "name": "spreadsheet-id",
+      "regex": "\\b(?=[A-Za-z0-9_-]{44}\\b)(?![A-Za-z0-9_]*-[A-Za-z0-9_]*-)(?=[A-Za-z0-9_-]*[A-Z][A-Za-z0-9_-]*[A-Z])(?=[A-Za-z0-9_-]*\\d)[A-Za-z0-9_-]{44}"
+    },
+    {
+      "name": "tailscale-ip",
+      "regex": "\\b100\\.6[4-9]\\.\\d{1,3}\\.\\d{1,3}\\b|\\b100\\.(?:[7-9]\\d|1[01]\\d|12[0-7])\\.\\d{1,3}\\.\\d{1,3}\\b"
+    },
+    {
+      "name": "home-dir-user",
+      "regex": "man[w]ho"
+    },
+    {
+      "name": "host-eastend",
+      "regex": "east[e]ndpc"
+    },
+    {
+      "name": "name-first",
+      "regex": "Imman[u]el"
+    },
+    {
+      "name": "name-last",
+      "regex": "\\bLew[i]s\\b"
+    },
+    {
+      "name": "name-nick",
+      "regex": "\\bMann[y]\\b"
+    }
+  ]
+}

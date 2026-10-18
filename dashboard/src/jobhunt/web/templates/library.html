@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Library · Job Hunt 2026{% endblock %}
+{% block main %}
+<div>
+  <h1 class="h1">Library</h1>
+  <div class="lede">What we apply with: résumés, approved bullets, the ATS scanner, and the run docs.</div>
+</div>
+
+<div class="grid g-3">
+  <div class="card">
+    <h2>Résumés in use</h2>
+    {% for r in resumes %}
+    <div class="row" style="display:block">
+      <div style="font-size:14px;font-weight:500">{{ r.file }}</div>
+      <div class="hint" style="margin:2px 0 6px">{{ r.tract }} · updated {{ r.modified_at.strftime('%b %d, %Y') }} · {{ (r.size_bytes / 1024)|round|int }} KB</div>
+      <a href="/files/ops/{{ r.rel_path }}" style="font-size:13px">Open PDF</a>
+    </div>
+    {% else %}
+    <div class="empty">No PDFs in Resume/.</div>
+    {% endfor %}
+  </div>
+  <div class="card">
+    <h2>ATS scanner</h2>
+    <div style="font-size:13px;color:var(--ink-2);line-height:1.55;margin-bottom:12px">Check a résumé against applicant-tracking parsing before it goes out. Runs on East End PC, behind Cloudflare Access.</div>
+    <a class="btn-primary" href="{{ ats_url }}" target="_blank" rel="noopener noreferrer">Open ATS scanner</a>
+  </div>
+  <div class="card">
+    <h2><span class="grow">Accounts and health</span><a href="/accounts" style="font-size:13px">Open</a></h2>
+    <div style="font-size:13px;color:var(--ink-2);line-height:1.55">Tenant sign-ins from the account ledger. No credentials are shown.</div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      {% for t in tenant_states %}<span class="st {{ 's-sub' if 'exists' in t.state else ('s-pause' if 'gate' in t.state or 'CAPTCHA' in t.state else 's-ready') }}">{{ t.state }}: {{ t.n }}</span>{% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="grid g-lib">
+  <div class="card">
+    <h2>Approved résumé bullets</h2>
+    <div class="hint" style="margin-bottom:8px">From the bullet bank's Approved-Bullets.md. Held, excluded and retired bullets are left out.</div>
+    <div class="bullets">
+      {% set ns = namespace(sub=None) %}
+      {% for b in bullets %}
+      {% if b.subsection != ns.sub %}{% set ns.sub = b.subsection %}<div class="hint" style="padding:12px 0 4px;font-weight:600;color:var(--ink)">{{ b.subsection or b.section }}</div>{% endif %}
+      <div class="bullet"><span>{{ b.text }}</span><button class="copy" type="button" data-text="{{ b.text }}">Copy</button></div>
+      {% else %}
+      <div class="empty">No approved bullets found.</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card">
+    <div id="doc">{% include "_doc.html" %}</div>
+  </div>
+</div>
+{% endblock %}

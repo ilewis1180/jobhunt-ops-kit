@@ -1,0 +1,4 @@
+question_id,label_normalized,times_seen,seen_on_live_form,answer_key,answer_sources,ats_list,example_labels
+2b2a4b6a10,first name,2,1,identity.first_name,standing_answers:2,greenhouse; lever,First Name* | First name
+7c1d0e9f55,will you require sponsorship,2,1,work_auth.sponsorship,standing_answers:2,greenhouse; lever,Will you require sponsorship?
+9d4e8a1c02,how did you hear about this job,1,1,screening.how_heard,standing_answers:1,greenhouse,How did you hear about this job?

@@ -1,0 +1,5 @@
+{"ts": "2026-01-08T19:05:00Z", "ct": "2026-01-08 19:05 UTC", "lane": 1, "run": "R20260108-1300-apply1", "kind": "register", "previous_run": null}
+{"ts": "2026-01-08T19:06:00Z", "ct": "2026-01-08 19:06 UTC", "lane": 1, "run": "R20260108-1300-apply1", "kind": "window_ok"}
+{"ts": "2026-01-08T19:07:00Z", "ct": "2026-01-08 19:07 UTC", "lane": 1, "run": "R20260108-1300-apply1", "job": "4400000001", "claim_id": "4400000001-L1-2026-01-08T19:07:00Z", "kind": "claimed", "attempt": 1, "owner_lane": 1}
+{"ts": "2026-01-08T19:50:00Z", "ct": "2026-01-08 19:50 UTC", "lane": 1, "run": "R20260108-1300-apply1", "job": "4400000001", "claim_id": "4400000001-L1-2026-01-08T19:07:00Z", "kind": "approved", "attempt": 1, "approval": "Yes, as carded"}
+{"ts": "2026-01-08T20:02:41Z", "ct": "2026-01-08 20:02 UTC", "lane": 1, "run": "R20260108-1300-apply1", "job": "4400000001", "claim_id": "4400000001-L1-2026-01-08T19:07:00Z", "kind": "submitted", "attempt": 1, "findings": "submitted-greenhouse-northwind-4400000001-a1-R20260108-1300-apply1.md", "approval": "Yes, as carded"}

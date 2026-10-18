@@ -1,0 +1,11 @@
+{
+  "_comment": "Shape of the PRIVATE pattern file that pii_scan.py, trace.py, import-inbox.py and build-question-bank.py load from paths.pii_patterns (default ~/.config/jobhunt/pii_patterns.json). Copy this file there, replace every REPLACE_ value with your own, chmod 600. Never put the real file in the repository. `pii_regex` is one alternation; each top-level alternative is reported under a neutral name derived from its shape (email, phone, zip, street, name, value). `patterns` is the optional named form (see pii_patterns.public.json). `replacements` are the substitutions build-question-bank.py applies when it finds a value in an observation.",
+  "pii_regex": "REPLACE_first_name\\s+REPLACE_last_name|REPLACE_email_local(?:@|%40)REPLACE_email_domain|\\(?555\\)?[\\s.-]?0100[\\s.-]?0000|\\b12345\\b|\\b123 REPLACE Street\\b",
+  "replacements": [
+    {"regex": "REPLACE_email_local(?:@|%40)REPLACE_email_domain", "label": "{answers.identity.email}"},
+    {"regex": "\\(?555\\)?[\\s.-]?0100[\\s.-]?0000", "label": "{answers.identity.mobile_phone}"},
+    {"regex": "\\b123 REPLACE Street\\b", "label": "{answers.address.street}"},
+    {"regex": "\\b12345\\b", "label": "{answers.address.zip}"},
+    {"regex": "REPLACE_first_name\\s+REPLACE_last_name", "label": "{answers.identity.full_name}"}
+  ]
+}

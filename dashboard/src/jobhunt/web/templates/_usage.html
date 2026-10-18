@@ -1,0 +1,48 @@
+{# Token use per session, from the orchestrator's Runs/<date>/USAGE-<RunID>.csv. The newest day is open;
+   earlier days fold away. Refreshed every 30 s in run mode (applications.html). #}
+{% macro run_table(run) %}
+<div class="table usage">
+  <div class="tr u th"><div>Session</div><div>Model</div><div>Tokens</div><div>In / out</div><div>Cache read / write</div><div>Submitted</div><div>Per job</div><div>Weekly</div></div>
+  {% for s in run.sessions %}
+  <div class="tr u">
+    <div style="min-width:0"><div class="co">{{ s.session }}</div><div class="ro">Phase {{ s.phase }}{% if s.run %} · {{ s.run }}{% endif %}{% if s.updated %} · {{ s.updated }}{% endif %}</div></div>
+    <div class="muted">{{ s.model }}</div>
+    <div><b>{{ s.tokens }}</b></div>
+    <div class="muted">{{ s.io }}</div>
+    <div class="muted">{{ s.cache }}</div>
+    <div>{{ s.submitted if s.submitted is not none else '—' }}</div>
+    <div>{{ s.per_job }}</div>
+    <div>{{ s.pct }}</div>
+  </div>
+  {% endfor %}
+  <div class="tr u tot"><div>Run {{ run.run_id }}{% if run.phase %} · phase {{ run.phase }}{% endif %}</div><div></div><div><b>{{ run.tokens }}</b></div><div></div><div></div><div>{{ run.submitted }}</div><div>{{ run.per_job }}</div><div><b>{{ run.pct_s }}</b></div></div>
+</div>
+{% endmacro %}
+
+<div class="card usage-card">
+  <h2><span class="grow">Token use</span>{% if usage.weekly_now %}<span class="hint">Weekly limit now {{ usage.weekly_now }} used{% if usage.resets %} · resets {{ usage.resets }}{% endif %}</span>{% endif %}</h2>
+  {% if not usage.days %}
+  <div class="empty">No token figures yet. The orchestrator writes them to <code>Runs/&lt;date&gt;/USAGE-&lt;RunID&gt;.csv</code> at each checkpoint.</div>
+  {% else %}
+  {% set d = usage.days[0] %}
+  <div class="grid g-4">
+    <div class="tile"><div class="l">Tokens, {{ d.label }}</div><div class="n">{{ d.tokens }}</div><div class="s d-only">{{ d.runs|length }} run{{ 's' if d.runs|length != 1 }}, {{ d.n_sessions }} session{{ 's' if d.n_sessions != 1 }}</div></div>
+    <div class="tile"><div class="l">Jobs submitted</div><div class="n">{{ d.submitted }}</div><div class="s d-only">by these sessions</div></div>
+    <div class="tile"><div class="l">Tokens per job</div><div class="n">{{ d.per_job }}</div><div class="s d-only">all sessions ÷ submitted</div></div>
+    <div class="tile"><div class="l">Weekly limit used</div><div class="n">{{ d.pct_s }}</div><div class="s d-only">by {{ d.label }}'s runs</div></div>
+  </div>
+  <div class="d-only">
+    {% for run in d.runs %}{{ run_table(run) }}{% endfor %}
+    {% if usage.days|length > 1 %}
+    <details class="usage-more">
+      <summary>Earlier days ({{ usage.days|length - 1 }})</summary>
+      {% for e in usage.days[1:] %}
+      <h3>{{ e.label }} · {{ e.tokens }} tokens · {{ e.submitted }} submitted · {{ e.pct_s }} of weekly limit</h3>
+      {% for run in e.runs %}{{ run_table(run) }}{% endfor %}
+      {% endfor %}
+    </details>
+    {% endif %}
+  </div>
+  <div class="hint">Tokens are everything a session sent and received, cache reads included. A session's weekly share is estimated from its share of the run's tokens (the limit is account-wide and lanes run in parallel).</div>
+  {% endif %}
+</div>

@@ -1,0 +1,33 @@
+{% from "_macros.html" import chip, status as st %}
+<div class="table d-only">
+  <div class="tr th"><div>Applied</div><div>Company and role</div><div>How applied</div><div>Status</div><div>Résumé</div><div>Answers</div><div>Proof</div><div>JD</div></div>
+  {% for r in rows %}
+  <div class="tr">
+    <div style="color:var(--ink-2)">{{ r.when }}</div>
+    <div style="min-width:0"><div class="co">{{ r.company }}</div><div class="ro">{{ r.role }}{% if r.location %} · {{ r.location }}{% endif %}</div></div>
+    <div>{{ chip(r.ats) }}</div>
+    <div>{{ st(r) }}</div>
+    <div style="color:var(--ink-2)">{{ r.resume }}</div>
+    <div>{% if r.answers != '—' %}<a href="/applications/{{ r.job_id }}">{{ r.answers }}</a>{% else %}—{% endif %}</div>
+    <div>{% if r.has_attempt %}<a href="/applications/{{ r.job_id }}">Audit trail</a>{% else %}<span class="muted">—</span>{% endif %}</div>
+    <div>{% if r.has_jd %}<a href="/applications/{{ r.job_id }}#jd">Read JD</a>{% else %}<span class="muted">—</span>{% endif %}</div>
+  </div>
+  {% else %}
+  <div class="tr"><div class="muted" style="grid-column:1/-1">No jobs match.</div></div>
+  {% endfor %}
+</div>
+<div class="m-only">
+  {% for r in rows %}
+  <div class="mcard">
+    <div class="top"><div class="co">{{ r.company }}</div>{{ st(r) }}</div>
+    <div class="ro">{{ r.role }} · {{ r.when }}</div>
+    <div class="bot">{{ chip(r.ats) }}<span class="grow"></span>
+      {% if r.has_attempt %}<a href="/applications/{{ r.job_id }}">Audit</a>{% endif %}
+      {% if r.has_jd %}<a href="/applications/{{ r.job_id }}#jd">JD</a>{% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="empty">No jobs match.</div>
+  {% endfor %}
+</div>
+<div class="hint">{{ rows|length }} jobs</div>

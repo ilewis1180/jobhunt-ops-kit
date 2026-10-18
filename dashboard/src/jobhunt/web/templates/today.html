@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chip, status %}
+{% block title %}Today · Job Hunt 2026{% endblock %}
+{% block main %}
+<div class="head">
+  <div class="grow">
+    <h1 class="h1">Today</h1>
+    <div class="lede">
+      {% if t.latest_run %}Latest run {{ t.latest_run }} · {% endif %}
+      {% for h in t.health if h.name == 'Browser on the apply host' %}Browser {{ 'up' if h.state == 'Up' else 'down' }}{% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="grid g-6 m3">
+  {% for f in t.funnel %}
+  <div class="tile"><div class="l">{{ f.label }}</div><div class="n">{{ f.n }}</div></div>
+  {% endfor %}
+</div>
+
+<div class="grid g-2">
+  <div class="col">
+    <div class="card" {% if t.needs %}style="border-color: var(--warn-line)"{% endif %}>
+      <h2><span class="grow">Needs you</span>{% if t.needs_total %}<span class="st s-pause">{{ t.needs_total }} paused</span>{% endif %}</h2>
+      <div class="hint">Paused on the Queue: each waits on a sign-in, an answer or a CAPTCHA from you. Live lane waits show in the lane chats, not here.</div>
+      {% for n in t.needs %}
+      <div class="row">
+        <div class="grow">
+          <div style="font-weight:500">{{ n.reason or 'Paused' }}</div>
+          <div class="hint">{{ n.company }}{% if n.role %} · {{ n.role }}{% endif %} · Job ID {{ n.job_id }}</div>
+        </div>
+        <a class="nowrap" href="/applications/{{ n.job_id }}">Details</a>
+      </div>
+      {% if loop.last and t.needs_total > t.needs|length %}<div class="row"><a href="/applications?status=Paused">All {{ t.needs_total }} paused</a></div>{% endif %}
+      {% else %}
+      <div class="empty">Nothing paused.</div>
+      {% endfor %}
+    </div>
+
+    <div class="card">
+      <h2>Recent submissions</h2>
+      {% for r in t.recent %}
+      <div class="row">
+        <div class="muted nowrap" style="width:92px;font-size:12px">{{ r.when }}</div>
+        <div class="grow"><span style="font-weight:500">{{ r.company }}</span>{% if r.role %}<span class="muted"> · {{ r.role }}</span>{% endif %}</div>
+        <span class="d-only">{{ chip(r.ats) }}</span>
+        <a class="nowrap" href="/applications/{{ r.job_id }}">Audit trail</a>
+      </div>
+      {% else %}
+      <div class="empty">No submissions yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card">
+      <h2><span class="grow">Up next</span><a href="/applications?status=Ready" style="font-size:13px">All ready</a></h2>
+      <div style="display:flex;flex-direction:column;gap:10px">
+      {% for u in t.upnext %}
+        <div style="border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px"><div style="flex-grow:1;font-size:15px;font-weight:600">{{ u.company }}</div>{{ chip(u.ats) }}</div>
+          <div style="font-size:13px;color:var(--ink-2)">{{ u.role }}{% if u.location %} · {{ u.location }}{% endif %}</div>
+          <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)">
+            {{ status(u) }}<span>Résumé: {{ u.resume }}</span>{% if u.lane %}<span>Lane {{ u.lane }}</span>{% endif %}
+            <span style="flex-grow:1"></span><a href="/applications/{{ u.job_id }}">PREP card</a>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty">Nothing ready on the latest board.</div>
+      {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="grow">Health</span><a href="/accounts" style="font-size:13px">Details</a></h2>
+      <div class="grid g-health">
+        {% for h in t.health %}
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px"><span class="st {{ h.cls }}">{{ h.state }}</span><span>{{ h.name }}</span></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

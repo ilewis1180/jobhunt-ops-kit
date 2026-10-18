@@ -1,0 +1,61 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pii-gate:
+    name: public-safe PII gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: pii_scan over the whole tree with the public patterns
+        run: python3 ops/tools/pii_scan.py --patterns ops/tools/pii_patterns.public.json .
+      - name: plain grep for strings that must never appear
+        run: |
+          set -e
+          hits=0
+          for s in 'man''who' 'east''endpc' '100.65.' 'Imman''uel' 'Lew''is' 'Man''ny'; do
+            if grep -rnI --exclude-dir=.git -F -- "$s" . ; then hits=1; fi
+          done
+          test "$hits" -eq 0
+
+  tests:
+    name: tests (python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: ops tools
+        run: |
+          python3 ops/tools/test_common.py
+          python3 ops/tools/test_pii_scan.py
+          python3 ops/tools/test_dispatch.py
+          python3 ops/tools/test_import_inbox.py
+      - name: discover package
+        run: |
+          python3 -m pip install -q pytest
+          python3 -m pytest -q discover/tests
+      - name: dashboard
+        run: |
+          python3 -m pip install -q -r dashboard/requirements-dev.txt
+          python3 -m pytest -q dashboard/tests
+      - name: résumé scripts on the fictional examples
+        run: |
+          python3 -m pip install -q pyyaml
+          python3 resume/scripts/check_resume.py resume/examples/ATS-Example.md resume/examples/Display-Example.md
+          python3 resume/scripts/build_backup.py --dir resume/examples --records resume/examples/records.example.json \
+            --base-css ../css/minimal-base.css --theme-css ../css/ohmycv-theme.css --ats-css ../css/ohmycv-ats.css \
+            --out /tmp/example_backup.json
+          python3 -c "import json; d=json.load(open('/tmp/example_backup.json')); assert len(d)==2, d.keys()"
+      - name: python syntax of every script
+        run: python3 -m compileall -q ops/tools discover/src discover/scripts resume/scripts dashboard/src

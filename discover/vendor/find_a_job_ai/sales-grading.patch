@@ -1,0 +1,130 @@
+diff --git a/scripts/daily_job_search.py b/scripts/daily_job_search.py
+index 5f73177..cc03bd6 100644
+--- daily_job_search.py
++++ daily_job_search.py
+@@ -83,6 +83,28 @@ def load_profile(path):
+     return profile
+ 
+ 
++def _terms_re(terms):
++    return re.compile(r"\b(" + "|".join(re.escape(t) for t in terms) + r")\b", re.I) if terms else None
++
++
++def build_seniority_stretch(profile):
++    """Optional profile["seniority_stretch_terms"]: title words that count as a stretch
++    (default: senior/lead/staff/principal/manager/director/head of). [] disables it."""
++    if "seniority_stretch_terms" not in profile:
++        return SENIORITY_STRETCH
++    return _terms_re(profile["seniority_stretch_terms"])
++
++
++def build_role_family(profile):
++    """Optional profile["role_family"] = {"other": [terms], "adjacent": [terms], "core": [terms]},
++    matched against the job title; with "core" set, a title matching none of it is capped at D. Absent -> the built-in software-engineering heuristics."""
++    rf = profile.get("role_family")
++    if not rf:
++        return None
++    return {"other": _terms_re(rf.get("other")), "adjacent": _terms_re(rf.get("adjacent")),
++            "core": _terms_re(rf.get("core"))}
++
++
+ def build_skill_pattern(name):
+     """Word-bounded regex for plain alphanumeric skill names; bare (unbounded)
+     regex for names with symbols (c#, .net, c++, node.js) since \\b doesn't
+@@ -379,7 +401,7 @@ def unescape_markdown(text):
+     return MARKDOWN_ESCAPE_RE.sub(r"\1", text) if text else text
+ 
+ 
+-def check_seniority(title, text, your_years):
++def check_seniority(title, text, your_years, stretch_re=SENIORITY_STRETCH):
+     if SENIORITY_EXCLUDE_TITLE.search(title):
+         return "exclude", f"title indicates junior/entry/intern level: '{title}'"
+ 
+@@ -403,14 +425,30 @@ def check_seniority(title, text, your_years):
+         return "match", f"explicit ask of {best_years} years is within your ~{your_years}yr band: '{best_match}'"
+ 
+     combined = f"{title} {text[:2000] if text else ''}"
+-    m = SENIORITY_STRETCH.search(combined)
++    m = stretch_re.search(combined) if stretch_re else None
+     if m:
+         return "stretch", f"title-only signal, no explicit years found: '{m.group(0)}'"
+     return "match", "seniority looks like a reasonable fit"
+ 
+ 
+-def check_role_family(title, text, tags):
++def check_role_family(title, text, tags, role_family=None):
+     combined = f"{title} {' '.join(tags)} {text[:2000] if text else ''}"
++    if role_family:
++        # Profile-supplied regexes (non-engineering profiles). "other" and "adjacent"
++        # match against the TITLE only, so a stray word in the JD body can't demote a role.
++        m = role_family["other"].search(title) if role_family.get("other") else None
++        if m:
++            return "other", f"different role family: '{m.group(0)}'"
++        m = role_family["adjacent"].search(title) if role_family.get("adjacent") else None
++        if m:
++            return "adjacent", f"adjacent role family: '{m.group(0)}'"
++        core = role_family.get("core")
++        if core:
++            m = core.search(title)
++            if not m:
++                return "other", f"title is not a target role: '{title}'"
++            return "core", f"title matches a target role: '{m.group(0)}'"
++        return "core", "title matches a target role family"
+     m = ROLE_OTHER.search(combined)
+     if m:
+         return "other", f"different role family: '{m.group(0)}'"
+@@ -804,13 +842,13 @@ def evaluate(job, ctx):
+         job["exclusion_reason"] = f"Location type: {loc_evidence}"
+         return False
+ 
+-    sen_status, sen_evidence = check_seniority(title, text, ctx["years_experience"])
++    sen_status, sen_evidence = check_seniority(title, text, ctx["years_experience"], ctx["seniority_stretch"])
+     if sen_status == "exclude":
+         job["excluded"] = True
+         job["exclusion_reason"] = sen_evidence
+         return False
+ 
+-    role_status, role_evidence = check_role_family(title, text, tags)
++    role_status, role_evidence = check_role_family(title, text, tags, ctx["role_family"])
+     recruiter_spam = check_recruiter_spam(text)
+ 
+     stack_score, stack_note = score_stack(
+@@ -825,6 +863,8 @@ def evaluate(job, ctx):
+     role_score = {"core": 10, "adjacent": 5, "other": 0}[role_status]
+ 
+     total = stack_score + lang_score + auth_score + sen_score + role_score
++    if role_status == "other" and ctx["role_family"] and ctx["role_family"].get("core"):
++        total = min(total, 54)  # cap at D — title is not one of the profile's target roles
+     if recruiter_spam:
+         total = min(total, 69)  # cap at C — unreliable / staffing-agency-template listing
+     if sen_status == "big_stretch":
+@@ -892,6 +932,8 @@ def write_report(new_graded, new_excluded, today, all_graded_count, all_excluded
+     # convention for the original/default profile).
+     market = profile.get("market") or "other"
+     suffix = "" if market == "japan" else f"-{market}"
++    if profile.get("profile_id"):
++        suffix = f"-{profile['profile_id']}"
+     path = os.path.join(REPORTS_DIR, f"{today}{suffix}.md")
+ 
+     new_graded.sort(key=lambda j: (-j["score"], j["title"]))
+@@ -1006,6 +1048,11 @@ def main():
+ 
+     profile = load_profile(args.profile)
+ 
++    # Optional profile["profile_id"] keeps each profile's seen-jobs state and report separate.
++    global STATE_PATH
++    if profile.get("profile_id"):
++        STATE_PATH = os.path.join(DATA_DIR, f"seen_jobs_{profile['profile_id']}.json")
++
+     lang_req = profile["language_requirements"]
+     workauth_disqualify, workauth_positive = build_workauth_patterns(profile["work_authorization"])
+     ctx = {
+@@ -1021,6 +1068,8 @@ def main():
+         "secondary_cap": profile["secondary_stack_cap"],
+         "secondary_names": list(profile["secondary_skills"].keys()),
+         "location_pref": profile["work_location_preference"],
++        "seniority_stretch": build_seniority_stretch(profile),
++        "role_family": build_role_family(profile),
+     }
+ 
+     today = datetime.now().strftime("%Y-%m-%d")  # local date — this is a once-a-day-by-local-calendar tool

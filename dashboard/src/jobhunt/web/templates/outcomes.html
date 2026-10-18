@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Outcomes · Job Hunt 2026{% endblock %}
+{% block main %}
+<div class="head">
+  <div class="grow">
+    <h1 class="h1">Outcomes</h1>
+    <div class="lede d-only">What happened to each application: applied, confirmed, interview, rejected, and the days between.</div>
+  </div>
+  <span class="st {{ o.stamp.cls }}" title="Amber over 12 h, red over 36 h">{{ o.stamp.text }}</span>
+</div>
+
+{% if o.missing %}
+<div class="card"><div class="empty" style="border-top:0">timeline.csv has not arrived from the Mac yet.</div></div>
+{% else %}
+<div class="grid g-6">
+  {% for t in o.tiles %}
+  <div class="tile"><div class="l">{{ t.label }}</div><div class="n">{{ t.n }}</div><div class="s d-only">{{ t.sub }}</div></div>
+  {% endfor %}
+</div>
+
+<div class="card spans" style="margin-top:22px">
+  <h2>Days between steps</h2>
+  <div class="sp h"><div>Step</div><div>Median</div><div class="x">Average</div><div class="x">Fastest</div><div class="x">Slowest</div><div>n</div></div>
+  {% for s in o.spans %}
+  <div class="sp"><div>{{ s.label }}</div><div><b>{{ s.median }}</b></div><div class="x">{{ s.avg }}</div><div class="x">{{ s.fast }}</div><div class="x">{{ s.slow }}</div><div class="muted">{{ s.n }}</div></div>
+  {% endfor %}
+  <div class="hint" style="margin-top:10px">Dates come from the Mac's mail tracker. A step with no mail matched yet shows a dash and counts as unknown, not zero.</div>
+</div>
+
+<div class="card" style="margin-top:22px">
+  <h2>Follow-ups due ({{ o.due|length }})</h2>
+  <div class="hint" style="margin-bottom:10px">Open applications whose follow-up date has passed, longest overdue first. A snooze or a recorded follow-up in followups.csv removes a row.</div>
+  <div class="table">
+    <div class="tr th fu"><div>Company and role</div><div>Applied</div><div>Due</div><div>Overdue</div><div>Note</div></div>
+    {% for r in o.due %}
+    <div class="tr fu">
+      <div style="min-width:0"><div class="co">{{ r.company }}</div><div class="ro">{{ r.title }}</div></div>
+      <div>{{ r.applied }}</div><div>{{ r.due }}</div>
+      <div><span class="st {{ 's-bad' if r.overdue >= 8 else 's-pause' }}">{{ r.overdue }} d</span></div>
+      <div class="muted">{{ r.note or '—' }}</div>
+    </div>
+    {% else %}
+    <div class="tr fu"><div class="muted" style="grid-column:1/-1">Nothing due.</div></div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="filters" style="margin-top:22px">
+  <span class="lab">Show</span>
+  {% for s, label, cls in [('', 'All', 's-ready'), ('applied', 'Applied, no reply', 's-ready'), ('confirmed', 'Confirmed', 's-sub'), ('rejected', 'Rejected', 's-bad')] %}
+  <a class="st {{ cls }} {{ 'on' if o.state == s }}" href="/outcomes{{ '?state=' ~ s if s }}">{{ label }}</a>
+  {% endfor %}
+</div>
+<div class="table">
+  <div class="tr th oc"><div>Applied</div><div>Company and role</div><div>Confirmed</div><div>Interview</div><div>Rejected</div><div>Days to result</div><div>State</div></div>
+  {% for r in o.rows %}
+  <div class="tr oc">
+    <div>{{ r.applied }}</div>
+    <div style="min-width:0"><div class="co">{{ r.company }}</div><div class="ro">{{ r.title }}</div></div>
+    <div>{{ r.confirmed }}</div><div>{{ r.interview }}</div><div>{{ r.rejected }}</div>
+    <div class="muted">{{ r.to_reject or r.to_confirm or '—' }}</div>
+    <div><span class="st {{ {'applied':'s-ready','confirmed':'s-sub','rejected':'s-bad'}.get(r.state, 's-skip') }}">{{ r.state|capitalize }}</span></div>
+  </div>
+  {% else %}
+  <div class="tr oc"><div class="muted" style="grid-column:1/-1">No applications in this view.</div></div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

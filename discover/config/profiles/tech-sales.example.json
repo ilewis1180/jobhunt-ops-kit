@@ -1,0 +1,105 @@
+{
+  "_comment": "Example profile: find-a-job-ai grading fields plus the wrapper keys name/search_term/location/sites/results_wanted/hours_old. Copy to <name>.json (git-ignored? no: profiles hold no PII, but check) and put your own titles, skills and location in.",
+  "name": "tech-sales",
+  "search_term": "account executive software",
+  "location": "Denver, CO",
+  "sites": [
+    "linkedin",
+    "indeed"
+  ],
+  "results_wanted": 25,
+  "hours_old": 36,
+  "profile_id": "tech-sales",
+  "candidate_name": "Example Candidate (Tech Sales)",
+  "job_titles": [
+    "Account Executive",
+    "Territory Account Manager",
+    "Enterprise Account Manager",
+    "Account Director",
+    "Client Partner",
+    "Channel Account Manager",
+    "Partner Development Manager",
+    "Sales Engineer",
+    "Solutions Consultant"
+  ],
+  "locations": [
+    "Denver, CO"
+  ],
+  "market": "us",
+  "country_indeed": "USA",
+  "years_experience": 10,
+  "core_skills": {
+    "salesforce": 5,
+    "enterprise": 3,
+    "strategic accounts": 4,
+    "territory": 3,
+    "quota": 3,
+    "forecast": 3,
+    "channel": 4,
+    "partner": 3,
+    "cloud": 3,
+    "aws": 4,
+    "telecom": 4,
+    "networking": 3,
+    "sled": 5,
+    "public sector": 4,
+    "government": 3,
+    "rfp": 4,
+    "video conferencing": 3,
+    "collaboration": 2,
+    "solution selling": 3,
+    "consultative": 2
+  },
+  "secondary_skills": {},
+  "core_stack_max": 40,
+  "secondary_stack_cap": 16,
+  "language_requirements": {},
+  "work_authorization": {
+    "target_country": "United States",
+    "country_adjective": "american",
+    "status": "citizen",
+    "is_citizen": true,
+    "notes": "Set is_citizen true only if the candidate holds citizenship of target_country; then the work-authorization check short-circuits to clear."
+  },
+  "work_location_preference": "any",
+  "seniority_stretch_terms": [],
+  "role_family": {
+    "other": [
+      "software engineer",
+      "developer",
+      "recruiter",
+      "nurse",
+      "driver",
+      "technician",
+      "accountant",
+      "paralegal"
+    ],
+    "adjacent": [
+      "sales development",
+      "business development representative",
+      "sdr",
+      "bdr",
+      "customer success",
+      "customer support",
+      "marketing"
+    ],
+    "core": [
+      "sales",
+      "account executive",
+      "account manager",
+      "account director",
+      "client partner",
+      "client executive",
+      "client director",
+      "channel",
+      "alliances",
+      "partner development",
+      "partner manager",
+      "solutions engineer",
+      "solutions consultant",
+      "customer engineer",
+      "presales",
+      "pre-sales"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+<div class="table d-only">
+  <div class="tr th q"><div>Question</div><div>Seen</div><div>Answer key</div><div>Sources</div><div>ATS</div></div>
+  {% for r in rows %}
+  <div class="tr q">
+    <div title="{{ r.example_labels or '' }}">{{ r.label_normalized }}</div>
+    <div>{{ r.times_seen or '' }}</div>
+    <div style="font-family:var(--mono);font-size:12px">{{ r.answer_key or '—' }}</div>
+    <div class="muted">{{ r.answer_sources or '' }}</div>
+    <div class="muted">{{ r.ats_list or '' }}</div>
+  </div>
+  {% else %}
+  <div class="tr q"><div class="muted" style="grid-column:1/-1">No questions match.</div></div>
+  {% endfor %}
+</div>
+<div class="m-only">
+  {% for r in rows %}
+  <div class="mcard"><div class="top"><div class="co" style="font-size:14px">{{ r.label_normalized }}</div><span class="st s-ready">{{ r.times_seen or 0 }}×</span></div>
+    <div class="ro" style="font-family:var(--mono);font-size:12px">{{ r.answer_key or '—' }}</div></div>
+  {% endfor %}
+</div>
+<div class="hint">{{ rows|length }} shown{% if rows|length == 300 %} (first 300; search to narrow){% endif %}</div>
