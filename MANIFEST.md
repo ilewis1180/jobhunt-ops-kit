@@ -144,12 +144,23 @@ All new and synthetic: `raw`, `queue`, `outcomes`, `outcomes-jt`, `timeline`, `f
 | ops `tools/tile-lanes.sh`, `launch-browser1.sh`, `publish-live.sh`, `timeline-refresh.sh`, `run_active.sh`, `post-commit.hook` | retired or Drive/launchd-specific; the backup script covers the live need |
 | the `Winnie-Macky-Notes` exchange files | correspondence |
 
-## Stage-2 changes not yet folded in (committed in ops after this kit's copy was taken)
+## Stage-2 changes (folded in on branch `stage2-sync`; see `CHANGELOG.md` 0.2)
 
-`tools/jobkey.py` (+ `test_jobkey.py`): one job-key module (LinkedIn number wins, else `JT-`), `linkedin_id()`,
-`aliases()` from `jt-keys.csv`; `tools/raw_append.py` (+ `test_raw_append.py`) and the `queue_api.py` Raw helpers
-(`RAW_HEADER`, `values_get`, `raw_append_rows`, `raw_format_dates`): the gated Raw append as a permanent tool;
-`dispatch.py` `proof_gate` / `outcome_gate` (`submitted` requires `--proof` and a staged OUTCOME fragment) and
-`company_key` via `jobkey`; `token_audit.py --write-usage <OrchRunID>` (+ `test_token_audit.py`), which replaces
-`usage_report.py`; `jd_archive_api.name_problem` (+ `test_jd_archive_names`); ops `.gitignore scratch/`. Two of the
-stage-2 items are already here (`pii_scan --attempt` with `JT-` ids; `mail_track` reading `outcomes-jt.csv`).
+| File | Source | Change |
+|---|---|---|
+| `ops/tools/jobkey.py`, `test_jobkey.py` | ops `tools/jobkey.py`, `test_jobkey.py` | data root and run regex from `common`; the test builds its own `jt-keys.csv` fixture (fictional company names) and compares with `discover/src/jobhunt_tools/keys.py` instead of the host's copy; incident dates and the person's name removed |
+| `ops/tools/raw_append.py`, `test_raw_append.py` | ops | `common` for the data root and run regex; "tell the operator"; the duplicate case described generically |
+| `ops/tools/queue_api.py` (Raw helpers) | ops `queue_api.py` `RAW_HEADER`, `values_get`, `raw_append_rows`, `raw_format_dates` | copied as is |
+| `ops/tools/common.py` | kit | `company_key` and `job_tools_key` now delegate to `jobkey` so there is one rule |
+| `ops/tools/dispatch.py` (`proof_gate`, `outcome_gate`, `--proof`) | ops | dates and the person's name removed from the messages |
+| `ops/tools/test_dispatch.py` | ops (stage-2 version) | fictional first name, `answers §` sources, `user_submit`, the operator |
+| `ops/tools/token_audit.py` (`--write-usage`) | ops | session-name hour in the configured zone (`common.local_tz`); "dashboard" for "portal"; the one-run comparison check (`--check-0929`) not carried |
+| `ops/tools/test_token_audit.py` | ops | project folder name and zone from config/env, not the host's |
+| `ops/tools/usage_report.py` | removed | replaced by `token_audit.py --write-usage` (same 16 columns) |
+| `ops/tools/jd_archive_api.py` (`name_problem`, `fix-names`), `test_jd_archive_names.py`, `test_jd_archive_fixnames.py` | ops | incident counts and dates removed; "tell the operator" |
+| `docs/roles/ROLE-{scrape,prep,orch,lane,discover}.md` | ops `ROLE-*.md` cards 1.0/1.1 | the person → the operator (they/them); `02` → the answers file; the browser deviceId and profile → config `[browser]`; host paths → the kit's folders (`discover/`, the ops folder); résumé file names → "the file the answers file names"; the side-business exception generalised; dated pilots and worker timings generalised; `tile-lanes.sh` → "a window-tiling script"; model names → "the lane model" / "a mid-tier model"; `03-ATS/<ats>.md` noted as the reader's own per-ATS notes; 07 Block 1 JD section → 06 Steps C–D; card dates dropped |
+| `CHANGELOG.md` | new (the ops repo keeps its own, which quotes dated incidents) | the kit's version history, out of the read path |
+| `docs/00`, `05`, `08`, `09`, `10`, `11`, `README.md`, `ops/tools/README.md`, `.github/workflows/ci.yml`, `config.example.toml` | kit | routing through the cards, `raw_append.py` in 05 D / 10 step 7, proof mandatory in 08 §1.1 and 09 §5, `--write-usage` and `tokens_per_submit` in 09 §8, one key in 11, new tests in CI, `[capture] proof_format` |
+
+Already here before this sync: `pii_scan --attempt` with `JT-` ids; `mail_track` reading `outcomes-jt.csv`; ops
+`.gitignore scratch/` (`ops/scratch/` is ignored here).

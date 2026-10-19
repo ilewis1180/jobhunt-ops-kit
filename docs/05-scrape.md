@@ -110,16 +110,21 @@ Tracker Stage,LinkedIn Job ID,LinkedIn Job URL,Job Title,Company,Company LinkedI
 
 ## Step D — append to Raw, with the gates
 
-1. **Before:** re-read the CSV: line 1 equals the header byte for byte; every row has exactly 27 fields; every row has
-   a valid Job ID; Snapshot Date is not the placeholder.
-2. **Before:** note Raw's current last row **N** and **Q** = the number of non-blank Job IDs in Queue column A.
-3. Append (through the Sheets API in `RAW` input mode, so no cell is ever read as a formula; the stage-2 tool
-   `raw_append.py` wraps this, see MANIFEST "to fold in"). By hand: File → Import → Append to current sheet, then
-   delete the appended header row.
-4. **After:** Raw `A1:AA1` unchanged; Raw ends at N + rows; the Queue's non-blank Job ID count = Q + the number of
-   **new** IDs; a spot read-back of appended Job IDs and Snapshot Dates.
-5. **Any mismatch:** stop, edit nothing further, tell the operator. Record N, rows and Q in the RUN-SUMMARY for the next
-   session's integrity check.
+The append goes through **`python3 ops/tools/raw_append.py`**, never by hand:
+
+1. Dry run: `python3 ops/tools/raw_append.py --run <RunID> --csv Runs/<date>/scrape-<RunID>.csv`. Its gates: line 1
+   equals the Raw header byte for byte, and so does live `Raw!A1:AA1`; every row has 27 fields; every Job ID is a
+   LinkedIn number or `JT-<10 hex>`; Snapshot Date is a real date; the key rule (a row whose LinkedIn URL carries a
+   job number uses that number; a `JT-` id equals `jt_key(Company, Title, Location)`); no Job ID twice in the file,
+   none already in Raw, no LinkedIn number already in Raw under a `JT-` alias (`jt-keys.csv`). It prints **N**
+   (Raw's last row) and **Q** (non-blank Job IDs in Queue A). Company + title + location repeats are warnings.
+2. The same command with `--expect-n <N> --expect-q <Q> --apply`: one append in `RAW` input mode (no cell is ever
+   read as a formula; numeric ids and dates typed so the Queue's lookups keep matching), then the read-back: header
+   unchanged, range starts at N+1, Raw ends at N + rows, Queue count = Q + rows, each appended Job ID and Snapshot
+   Date read back, every new Job ID in Queue A with Company filled. Log: `Runs/<date>/raw-appends-<RunID>.jsonl`.
+   Job-tools rows are added to `AppApply-Capture/jt-keys.csv` with their location.
+3. A gate failure writes nothing. **READ-BACK FAILED → stop, edit nothing further, tell the operator** (the sheet's
+   version history can restore). Record N, rows and Q in the RUN-SUMMARY for the next session's integrity check.
 
 ## Step E — report
 

@@ -5,6 +5,13 @@ approval. It grew out of one person's job hunt (about 250 applications in its fi
 **with nothing personal in it by construction**: every answer, résumé, hostname, spreadsheet id and run file lives
 outside the repository; CI scans the tree with a public PII gate on every push.
 
+## Role cards
+
+Each session role has an operating card in `docs/roles/` (`ROLE-scrape`, `ROLE-prep`, `ROLE-orch`, `ROLE-lane`,
+`ROLE-discover`): the minimum it reads, with pointers into the numbered playbooks. A lane starts on the card plus the
+answers file instead of six playbooks, which is where most of the token cost sat. `CHANGELOG.md` holds the playbooks'
+version history so it stays out of the read path.
+
 ## The four phases
 
 | Phase | Session | What happens |
@@ -12,7 +19,7 @@ outside the repository; CI scans the tree with a public PII gate on every push.
 | **0 Discover** | `phase 0` | search tools (python-jobspy, a grader) find jobs; the operator ticks Apply/Skip; an agent finds the real apply link; rows go to the Raw tab with a `JT-` key |
 | **1 Scrape** | `phase 1` | the LinkedIn Saved list is walked read-only into a 27-column CSV and appended to Raw through gates |
 | **2 Prep** | `phase 2` | every Ready job gets a PREP card: the real ATS, every answer worked out from the private answers file, drafted text with sources, consents, open questions. Nothing is typed into a form |
-| **3 Approve and submit** | `phase 3` | one **orchestrator** session runs a dispatch board, preflight, a decision sweep and the Queue writes; up to five **lanes** claim cards, ask the operator one question per card in their own chat, fill, write an INTENT, submit once, confirm, and record a trace, an outcome row and proof screenshots |
+| **3 Approve and submit** | `phase 3` | one **orchestrator** session runs a dispatch board, preflight, a decision sweep and the Queue writes; up to five **lanes** claim cards, ask the operator one question per card in their own chat, fill one `browser_batch` per form page, write an INTENT, submit once, confirm, and record a trace, an outcome row and proof screenshots (the submit event is refused without them) |
 
 The playbooks in `docs/` are written for a coding agent (Claude Code with a browser extension) but are
 tool-agnostic in their mechanics: write-once run files, read-back on every sheet write, a PII scan before every

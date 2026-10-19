@@ -26,7 +26,9 @@ Lane N:       register <N> <LaneRunID> · window <N> ok|hidden [--note] · claim
               lane read the confirmation; ends the card as externally submitted, no submit_clicked/intent needed;
               `event … submitted|unconfirmed|external` also writes the OUTCOME-/QB- staging fragments from the findings/INTENT
               when the lane has not, never over an existing one, after a pii_scan, and prints what is missing; a fragment
-              the lane wrote itself is parsed first and the event is refused if a row has the wrong number of columns)
+              the lane wrote itself is parsed first and the event is refused if a row has the wrong number of columns;
+              capture is mandatory: `submitted` also needs --proof AppApply-Capture/proof/<RunID>/
+              <JobID>-a<N>-review.png (or -confirm.png), and is refused if no OUTCOME fragment ends up staged)
               (`event <N> <JobID> awaiting_submit --note "<what the operator must do>"`: the lane hands a step at or before
               Submit to the operator (captcha, blocked click, code, terms box, file dialog). INTENT must exist. It shows as
               SUBMIT HANDOFF first on `board`/`watch`. After the operator acts the lane posts `external` or `submitted`.
@@ -791,6 +793,33 @@ def check_staged_fragments(job, attempt, run):
                     f'regenerate it from the findings and INTENT.')
 
 
+def proof_gate(job, attempt, proof):
+    """Capture is mandatory: `submitted` needs a proof screenshot of this attempt, saved
+    as 08 §1.1 says: AppApply-Capture/proof/<RunID>/<JobID>-a<N>-review|confirm|text<K>.png. Only the path is checked;
+    the image is never read (proof/ is exempt from pii_scan)."""
+    if not proof:
+        die(f'`submitted` needs --proof <file>: the review or confirmation screenshot, saved as '
+            f'AppApply-Capture/proof/<RunID>/{job}-a{attempt}-review.png or -confirm.png (08 §1.1). Capture is mandatory; '
+            f'take one scale-0.4 screenshot, save it, then post the event again.')
+    path = proof if os.path.isabs(proof) else os.path.join(REPO, proof)
+    root = os.path.join(os.path.realpath(REPO), 'AppApply-Capture', 'proof') + os.sep
+    if not os.path.realpath(path).startswith(root):
+        die(f'--proof {proof}: must be inside AppApply-Capture/proof/ (08 §1.1)')
+    if not os.path.basename(path).startswith(f'{job}-a{attempt}-'):
+        die(f'--proof {proof}: the file name must start with {job}-a{attempt}- (this attempt)')
+    if not os.path.isfile(path) or os.path.getsize(path) == 0:
+        die(f'--proof {proof}: no such file, or it is empty — save the screenshot first')
+
+
+def outcome_gate(job, attempt, run):
+    """`submitted` is recorded only when its OUTCOME fragment is staged (or already imported)."""
+    name = f'OUTCOME-{job}-a{attempt}-{run}.csv'
+    staging = os.path.join(REPO, 'AppApply-Capture', 'staging')
+    if not (os.path.exists(os.path.join(staging, name)) or glob.glob(os.path.join(staging, '_imported', '*', name))):
+        die(f'{name} is missing after fragment writing — `submitted` refused (capture is mandatory). '
+            f'Write it with the csv module (08 §4) or fix the findings file, then post the event again.')
+
+
 def cmd_event(a):
     st = State(run_dir(a.run))
     n = lane_arg(st, a.lane)
@@ -833,6 +862,8 @@ def cmd_event(a):
             die(f'the last `window ok` for lane {n} is {int(age // 60)} min old — read visibilityState now and post '
                 f'`window {n} ok` right before Submit (09 §5 step 5). A click into a hidden window is silently lost, and '
                 f'a second click is never allowed.')
+    if kind == 'submitted':
+        proof_gate(job, c['attempt'], a.proof)
     if kind in ('submitted', 'unconfirmed', 'paused', 'skipped', 'closed', 'external'):
         pii_gate(job, c['attempt'], a.findings)
     ts, ct = now()
@@ -840,10 +871,12 @@ def cmd_event(a):
         check_staged_fragments(job, c['attempt'], st.lane_run[n])
     frag_msgs = (write_fragments(st, c, n, kind, a.findings, ts, a.note or '')
                  if kind in ('submitted', 'unconfirmed', 'external') else [])
+    if kind == 'submitted':
+        outcome_gate(job, c['attempt'], st.lane_run[n])
     rec = {'ts': ts, 'ct': ct, 'lane': n, 'run': st.lane_run[n], 'job': job, 'claim_id': c['claim_id'],
            'kind': kind, 'attempt': c['attempt']}
-    for k in ('findings', 'approval', 'status', 'f', 'note'):
-        if getattr(a, k):
+    for k in ('findings', 'approval', 'status', 'f', 'note', 'proof'):
+        if getattr(a, k, None):
             rec[k] = getattr(a, k)
     append(os.path.join(st.d, 'events', f'lane{n}.jsonl'), rec)
     if kind in TERMINAL:
@@ -1459,6 +1492,7 @@ def main():
     x = sp.add_parser('event'); x.add_argument('lane'); x.add_argument('job'); x.add_argument('kind', choices=KINDS)
     for f in ('--findings', '--approval', '--status', '--f', '--note'):
         x.add_argument(f)
+    x.add_argument('--proof', help='submitted: the proof screenshot, AppApply-Capture/proof/<RunID>/<JobID>-a<N>-review.png (required)')
     x = sp.add_parser('retire'); x.add_argument('lane'); x.add_argument('--note')
     x = sp.add_parser('board'); x.add_argument('--holds', action='store_true')
     x = sp.add_parser('list'); x.add_argument('lane', nargs='?')

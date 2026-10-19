@@ -4,6 +4,18 @@
   python3 tools/token_audit.py [--run-id R20261017-HHMM-audit] [--since YYYY-MM-DD] [--projects-glob GLOB]
                                [--rates IN,OUT,CW5M,CW1H,CR] [--out-dir DIR] [--dry-run]
   python3 tools/token_audit.py --spot-check 10
+  python3 tools/token_audit.py --write-usage <OrchRunID> [--weekly-start N] [--weekly-now N] [--weekly-resets ISO]
+                               [--dry-run]                                dashboard feed Runs/<date>/USAGE-<OrchRunID>.csv
+
+--write-usage <OrchRunID> (replaces usage_report.py): one row per session of that Phase 3 run in the 16-column
+dashboard contract (USAGE_FIELDS): the orchestrator (`orch`, later hand-off sessions `orch-<HHMM>`) and its lanes
+(`lane<N>-<HHMM>` from the lane's own run id). jobs_attempted / jobs_submitted per lane come from outcomes.csv +
+outcomes-jt.csv rows whose run_id is the lane's own id (orch row blank). weekly_pct_start / weekly_pct_now /
+weekly_resets_at are not readable from the transcripts: pass what the operator reads off their usage page with
+--weekly-start N, --weekly-now N and --weekly-resets <ISO time> (orch row only); left out, they stay blank. Run it at
+each orchestrator checkpoint and at session end (09 §7–§8). The file is the run's live feed: it is rewritten atomically
+(temp + rename, so a file sync never ships half a file) while its date is today, and refused after that, so it is
+write-once history once the run day is over.
 
 Read-only over its inputs: the Claude Code transcripts (config paths.transcripts_glob, e.g.
 ~/.claude/projects/-Users-<you>-<project>*/<session>.jsonl, streamed line by line, never json-loaded whole) and
@@ -557,6 +569,93 @@ def spot_check(a, n):
         print(f'{r["started_at"][:16]}  {r["phase"]:12} {r["run_id_guess"]:22} | {r["first_user_line"]}')
 
 
+# ---- portal usage feed -------------------------------------------------------------------------------------------
+USAGE_FIELDS = ['run_id', 'phase', 'session', 'session_run_id', 'model', 'started_at', 'updated_at', 'input_tokens',
+                'output_tokens', 'cache_creation_tokens', 'cache_read_tokens', 'jobs_attempted', 'jobs_submitted',
+                'weekly_pct_start', 'weekly_pct_now', 'weekly_resets_at']
+ORCH_ID = re.compile(r'R(\d{4})(\d{2})(\d{2})-\d{4}-orch')
+
+
+def outcome_counts():
+    """(attempted, submitted) Counters by outcome run_id over outcomes.csv + outcomes-jt.csv (distinct attempt_id)."""
+    att, sub, seen = collections.Counter(), collections.Counter(), set()
+    for name in ('outcomes.csv', 'outcomes-jt.csv'):
+        p = os.path.join(REPO, 'AppApply-Capture', name)
+        if not os.path.exists(p):
+            continue
+        with open(p, newline='', encoding='utf-8') as fh:
+            for row in csv.DictReader(fh):
+                key = (row.get('run_id') or '', row.get('attempt_id') or '')
+                if key in seen or not (row.get('outcome') or '').strip():
+                    continue
+                seen.add(key)
+                att[key[0]] += 1
+                if row['outcome'].strip() == 'submitted':
+                    sub[key[0]] += 1
+    return att, sub
+
+
+def usage_rows(rows, orch_id, weekly=None):
+    att, sub = outcome_counts()
+    sel = [r for r in rows if r['orch_run_id'] == orch_id and (r['phase'] in ('orch', 'lane') or r['handoff'])]
+    out, orch_named = [], False
+    for r in sorted(sel, key=lambda r: r['started_at']):
+        hhmm = parse_ts(r['started_at']).astimezone(common.local_tz()).strftime('%H%M')
+        own = r['run_id_guess'] if r['phase'] == 'lane' and re.fullmatch(r'R\d{8}-\d{4}-apply\d', r['run_id_guess']) else ''
+        if r['phase'] == 'lane':
+            n = own[-1] if own else (re.search(r'lane\s*(\d)', r['first_user_line'].lower()) or [None, '?'])[1]
+            name = f'lane{n}-{own[10:14] if own else hhmm}'
+        else:
+            name = 'orch' if not orch_named else f'orch-{hhmm}'
+            orch_named = True
+        out.append({'run_id': orch_id, 'phase': '3', 'session': name, 'session_run_id': own, 'model': r['model'],
+                    'started_at': r['started_at'], 'updated_at': r['ended_at'],
+                    **{k: r[k] for k in TOKS},
+                    'jobs_attempted': att[own] if own else '', 'jobs_submitted': sub[own] if own else '',
+                    'weekly_pct_start': '', 'weekly_pct_now': '', 'weekly_resets_at': ''})
+        if name == 'orch' and weekly:
+            out[-1].update({k: v for k, v in weekly.items() if v not in (None, '')})
+    out.sort(key=lambda x: (not x['session'].startswith('orch'), x['started_at']))
+    return out
+
+
+def write_usage(a, orch_id):
+    m = ORCH_ID.fullmatch(orch_id or '')
+    if not m:
+        sys.exit('--write-usage needs an orchestrator run id, R<YYYYMMDD>-<HHMM>-orch')
+    date = f'{m[1]}-{m[2]}-{m[3]}'
+    a.since = a.since or date
+    rows, _ = collect(a)
+    for flag, v in (('--weekly-start', a.weekly_start), ('--weekly-now', a.weekly_now)):
+        if v not in (None, '') and not re.fullmatch(r'\d{1,3}(\.\d+)?', str(v)):
+            sys.exit(f'{flag} takes a percentage number, e.g. 42')
+    out = usage_rows(rows, orch_id, {'weekly_pct_start': a.weekly_start, 'weekly_pct_now': a.weekly_now,
+                                     'weekly_resets_at': a.weekly_resets})
+    total = sum(int(r[k]) for r in out for k in TOKS)
+    for r in out:
+        print(f'{r["session"]:14} {r["session_run_id"]:24} {fmt(r["cache_read_tokens"]):>9} cache_read · '
+              f'submitted {r["jobs_submitted"]}')
+    print(f'{orch_id}: {len(out)} session(s), {fmt(total)} tokens')
+    if a.dry_run:
+        return 0
+    if not out:
+        print('no sessions found for that run; nothing written', file=sys.stderr)
+        return 1
+    d = os.path.join(a.out_dir or os.path.join(REPO, 'Runs', date))
+    dest = os.path.join(d, f'USAGE-{orch_id}.csv')
+    if os.path.exists(dest) and date != datetime.date.today().isoformat():
+        sys.exit(f'refusing to rewrite {os.path.relpath(dest, REPO)}: its run day is over (Runs/ is write-once)')
+    os.makedirs(d, exist_ok=True)
+    tmp = os.path.join(d, f'.USAGE-{orch_id}.tmp')
+    with open(tmp, 'w', newline='', encoding='utf-8') as fh:
+        w = csv.DictWriter(fh, fieldnames=USAGE_FIELDS)
+        w.writeheader()
+        w.writerows(out)
+    os.replace(tmp, dest)
+    print(f'wrote {os.path.relpath(dest, REPO)}')
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0],
                                  formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -568,9 +667,16 @@ def main():
                                     '(take them from the claude-api skill, not memory)')
     ap.add_argument('--out-dir', help='output folder (default Runs/<today>)')
     ap.add_argument('--dry-run', action='store_true', help='scan and print the summary, write nothing')
+    ap.add_argument('--write-usage', metavar='ORCH_RUN_ID', help='write Runs/<date>/USAGE-<OrchRunID>.csv for the dashboard '
+                                                                  "token card (16 columns; see the docstring)")
+    ap.add_argument('--weekly-start', help='--write-usage: weekly limit %% used at the run start (orch row)')
+    ap.add_argument('--weekly-now', help='--write-usage: weekly limit %% used now (orch row)')
+    ap.add_argument('--weekly-resets', help='--write-usage: when the weekly limit resets, ISO time (orch row)')
     ap.add_argument('--spot-check', type=int, metavar='N', help='print N sessions (spread over phases) with their '
                                                                  'scrubbed first_user_line, write nothing')
     a = ap.parse_args()
+    if a.write_usage:
+        sys.exit(write_usage(a, a.write_usage))
     if a.spot_check:
         spot_check(a, a.spot_check)
         return

@@ -31,8 +31,10 @@ never submits. It writes nothing to the Job Queue until a job is marked Apply an
    ticks **Apply** or **Skip** in the file or says it in chat. Neither ticked = undecided, not processed. Both = ask.
 6. **Find the apply link** for every Apply (agent step below). Skips are logged and never proposed again.
 7. **Hand off to Phase 2.** For each job with a found link, build a Raw-format row (the 27 columns of 05 Step C, with
-   `Real Apply URL`, `Apply Domain`, `ATS Guess` filled; `Apply?` blank = Yes) and append it through the 05 Step D
-   gates. A job with no found link is **not** appended; it stays in the file as `no apply link`.
+   `Real Apply URL`, `Apply Domain`, `ATS Guess` and `Location` filled; `Aggregator` = `jobtools:<board>`; `Apply?`
+   blank = Yes) into `Runs/<date>/discover-<RunID>.csv`, then `python3 ops/tools/raw_append.py --run <RunID> --csv
+   <that file>` (dry run) and again with `--apply` (05 Step D). A job with no found link is **not** appended; it
+   stays in the file as `no apply link`.
 8. **Next command:** `phase 2` for the appended rows.
 
 ## Review file format
@@ -71,12 +73,12 @@ Never sign in, create an account or submit. One-line result per job.
 - 00 hard rules apply. Nothing personal in the DISCOVER file beyond job data. The file is write-once once the run ends.
 - **Job-tools key:** every job the tools find gets its own key in the existing Job ID column of Raw:
   `JT-<10 hex>` = the first 10 hex of SHA-1 of normalised `company|title|location` (lowercase, punctuation stripped,
-  whitespace collapsed; `ops/tools/common.py job_tools_key`). `Aggregator` = `jobtools:<board>`; the board's own job
-  id or URL goes in `LinkedIn Job URL` / `Flags`. Keep `AppApply-Capture/jt-keys.csv`
-  (`jt_key,board,board_id,company,title,first_seen_run`) to catch the same job found twice, and check it against
-  Queue rows from Phase 1 (same LinkedIn id, or same company + title) before appending, so one job never gets two rows.
-  **A job that carries a LinkedIn number keeps that number as its key** (the stage-2 `jobkey.py` rule); only a job
-  with no number gets a `JT-` key.
+  whitespace collapsed; `ops/tools/jobkey.py jt_key`). `Aggregator` = `jobtools:<board>`; the board's own job
+  id or URL goes in `LinkedIn Job URL` / `Flags`. `raw_append.py` keeps `AppApply-Capture/jt-keys.csv`
+  (`jt_key,board,board_id,company,title,first_seen_run,location`) to catch the same job found twice, and refuses a
+  LinkedIn number already in Raw under a `JT-` alias, so one job never gets two rows.
+  **A job that carries a LinkedIn number keeps that number as its key** (`python3 ops/tools/jobkey.py key "<company>"
+  "<title>" "<location>" [<url>]`); only a job with no number gets a `JT-` key.
 - **Test before the first append:** confirm the Queue lookup formulas accept a `JT-` id by appending one approved
   row through the gates and reading Queue back; stop if any lookup column is blank.
 - Commit at session end.

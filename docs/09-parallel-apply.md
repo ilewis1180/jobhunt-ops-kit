@@ -263,8 +263,10 @@ session. The `--wait-new` gate is running while you do steps 1–5, so do them *
    step labelled "Continue" or "Next" that ends the flow is the Submit. `submit_clicked` is posted only after a click
    happened; one posted early is voided with `retract`. Confirm read-only (03). Write the findings file.
 6. **Report:** `dispatch.py event <N> <JobID> submitted|unconfirmed|paused|skipped|closed|released --findings <file>`
-   (`--approval "<exact reply>"` for submits; `--status Paused-<X> --f "Q1: …"` for pauses). The event runs the PII
-   scan first. Then the 08 fragments (§6). **Never touch the Queue.**
+   (`--approval "<exact reply>"` for submits; `--status Paused-<X> --f "Q1: …"` for pauses). **`submitted` also
+   needs `--proof AppApply-Capture/proof/<LaneRunID>/<JobID>-a<N>-confirm.png`** (or `-review.png`, 08 §1.1) and is
+   refused when no OUTCOME fragment ends up staged: capture is mandatory, never skipped "for token economy". The event
+   runs the PII scan first. Then the 08 fragments (§6). **Never touch the Queue.**
 7. Next round. Times come from `date` or tool output, never typed by hand.
 
 **Away mode** (the operator steps away, the orchestrator sends word, or the window is `hidden`): finish or `released`
@@ -334,8 +336,10 @@ recorded anywhere.
 3. Final `queue-plan --queue api --apply` until it reports nothing to write.
 4. **JD Archive:** combine every lane's new `jd-*` files into `jd-<RunID>.csv` (06 Step C); `jd_archive_api.py append`
    dry run, then `--apply`.
-5. `build-question-bank.py`; `usage_report.py <OrchRunID>` for the dashboard's token card.
+5. `build-question-bank.py`; `python3 ops/tools/token_audit.py --write-usage <OrchRunID>` for the dashboard's token
+   card (only on the run's own day; the file is write-once after that).
 6. `RUN-SUMMARY-<RunID>.md`: the lanes' summaries rolled up (Submitted, best-effort answers that went out, still
-   waiting on the operator, proposed additions to the answers file), the board's final line. Then
-   `LEARNINGS-<RunID>.md` for anything about running in parallel.
+   waiting on the operator, proposed additions to the answers file), the board's final line, each lane's model, and
+   **`tokens_per_submit`** = the USAGE file's four token columns summed ÷ submits (the number to watch run over run).
+   Then `LEARNINGS-<RunID>.md` for anything about running in parallel.
 7. Commit, and tell the operator what waits on them.

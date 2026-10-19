@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline checks for tools/dispatch.py: `confirm`, lane `external`, the OUTCOME/QB fragments, `awaiting_submit`/`retract`, fragment quoting, and trace.py JT- ids. Builds a throwaway ops
+"""Offline checks for tools/dispatch.py: `confirm`, lane `external`, the OUTCOME/QB fragments, `awaiting_submit`/`retract`, fragment quoting, trace.py and pii_scan --attempt JT- ids, and the mandatory --proof on `submitted`. Builds a throwaway ops
 tree (JOBHUNT_OPS) with a fake Queue CSV and a harmless PII pattern file; never touches the Sheet, Chrome or real data.
 Usage: python3 tools/test_dispatch.py"""
 import csv, glob, io, json, os, subprocess, sys, tempfile
@@ -74,6 +74,14 @@ STAGING = os.path.join(TMP, 'AppApply-Capture', 'staging')
 os.makedirs(STAGING)
 
 
+def proof(j, lane_run='R20261006-0905-apply1'):
+    """08 §1.1 proof screenshot for attempt a1 (capture mandatory); returns the repo-relative path."""
+    rel = os.path.join('AppApply-Capture', 'proof', lane_run, f'{j}-a1-review.png')
+    os.makedirs(os.path.dirname(os.path.join(TMP, rel)), exist_ok=True)
+    open(os.path.join(TMP, rel), 'wb').write(b'\x89PNG fake')
+    return rel
+
+
 def lane_to_submit_clicked(j):
     d('claim', 1, '--ahead', 3)
     d('event', 1, j, 'awaiting_yes')
@@ -100,17 +108,31 @@ check('watch prints SUBMIT HANDOFF (A1)', 'SUBMIT HANDOFF' in subprocess.run(
 d('event', 1, a, 'retract', ok=False)                                   # note required
 d('event', 1, a, 'retract', '--note', 'no click happened; the control was blocked')
 d('event', 1, a, 'retract', '--note', 'twice', ok=False)               # nothing left to void
-out = d('event', 1, a, 'submitted', '--findings', findings(a, 'submitted'), '--approval', 'yes', ok=False)
+out = d('event', 1, a, 'submitted', '--findings', findings(a, 'submitted'), '--approval', 'yes', '--proof', proof(a), ok=False)
 check('after retract, submitted needs a fresh submit_clicked (A1)', 'before `submit_clicked`' in out)
 d('window', 1, 'ok'); d('event', 1, a, 'submit_clicked')
 
 # --- A5: a lane-written fragment with an unquoted comma is refused before the event
 bad = os.path.join(STAGING, f'QB-{a}-a1-R20261006-0905-apply1.csv')
 open(bad, 'w').write('question_id,label_verbatim,answer_planned\nq1,Worked here, as employee or contractor?,No\n')
-out = d('event', 1, a, 'submitted', '--findings', findings(a, 'submitted'), '--approval', 'yes', ok=False)
+out = d('event', 1, a, 'submitted', '--findings', findings(a, 'submitted'), '--approval', 'yes', '--proof', proof(a), ok=False)
 check('unquoted fragment refuses the event (A5)', 'columns' in out and 'csv module' in out and 'done:' not in d('show', a))
 os.remove(bad)
-out = d('event', 1, a, 'submitted', '--findings', findings(a, 'submitted'), '--approval', 'yes')
+# --- capture mandatory: submitted needs a proof file of this attempt
+out = d('event', 1, a, 'submitted', '--findings', findings(a, 'submitted'), '--approval', 'yes', ok=False)
+check('submitted without --proof is refused', '--proof' in out and 'done:' not in d('show', a))
+out = d('event', 1, a, 'submitted', '--findings', findings(a, 'submitted'), '--approval', 'yes',
+        '--proof', 'AppApply-Capture/proof/R20261006-0905-apply1/' + a + '-a1-confirm.png', ok=False)
+check('submitted with a proof path that does not exist is refused', 'no such file' in out)
+out = d('event', 1, a, 'submitted', '--findings', findings(a, 'submitted'), '--approval', 'yes', '--proof', proof(b), ok=False)
+check("submitted with another job's proof is refused", 'must start with' in out)
+outside = os.path.join(TMP, f'{a}-a1-review.png'); open(outside, 'wb').write(b'x')
+out = d('event', 1, a, 'submitted', '--findings', findings(a, 'submitted'), '--approval', 'yes', '--proof', outside, ok=False)
+check('submitted with proof outside AppApply-Capture/proof is refused', 'must be inside' in out)
+out = d('event', 1, a, 'submitted', '--findings', findings(a, 'submitted'), '--approval', 'yes', '--proof', proof(a))
+check('submitted with proof is recorded with its proof path', 'done:submitted' in d('show', a)
+      and any(json.loads(l).get('proof', '').endswith(f'{a}-a1-review.png') for l in
+              open(glob.glob(os.path.join(RUNS, 'dispatch-*', 'events', 'lane1.jsonl'))[0])))
 fo = os.path.join(STAGING, f'OUTCOME-{a}-a1-R20261006-0905-apply1.csv')
 fq = os.path.join(STAGING, f'QB-{a}-a1-R20261006-0905-apply1.csv')
 check('submitted writes OUTCOME fragment', os.path.exists(fo))
@@ -137,7 +159,7 @@ check('unconfirmed writes the QB fragment', os.path.exists(os.path.join(STAGING,
 
 # no INTENT -> OUTCOME only, and says QB is missing
 lane_to_submit_clicked(c)
-out = d('event', 1, c, 'submitted', '--findings', findings(c, 'submitted'), '--approval', 'yes')
+out = d('event', 1, c, 'submitted', '--findings', findings(c, 'submitted'), '--approval', 'yes', '--proof', proof(c))
 check('no INTENT: OUTCOME written, QB reported missing', os.path.exists(os.path.join(STAGING, f'OUTCOME-{c}-a1-R20261006-0905-apply1.csv'))
       and not os.path.exists(os.path.join(STAGING, f'QB-{c}-a1-R20261006-0905-apply1.csv')) and 'QB fragment NOT written' in out)
 
@@ -183,6 +205,11 @@ tr = lambda att: subprocess.run([sys.executable, os.path.join(TMP, 'tools', 'tra
 check('trace.py accepts a JT- attempt id (A3)', tr('JT-59de07b153-a1').returncode == 0 and os.path.exists(
     os.path.join(TMP, 'AppApply-Capture', 'traces', 'R20261006-0905-apply1', 'TRACE-JT-59de07b153-a1.jsonl')))
 check('trace.py still rejects a malformed id', tr('JT-zz-a1').returncode != 0)
+ps = lambda att: subprocess.run([sys.executable, os.path.join(TMP, 'tools', 'pii_scan.py'), '--attempt', 'R20261006-0905-apply1', att],
+                                capture_output=True, text=True, env=ENV, cwd=TMP)
+check('pii_scan --attempt accepts a JT- attempt id and scans its trace',
+      (lambda r: r.returncode == 0 and 'TRACE-JT-59de07b153-a1.jsonl' in r.stderr)(ps('JT-59de07b153-a1')))
+check('pii_scan --attempt still rejects a malformed id', ps('JT-zz-a1').returncode == 2)
 
 # --- A8: preflight percent-encodes non-ASCII URLs
 sys.path.insert(0, HERE)

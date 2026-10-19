@@ -41,6 +41,11 @@ jobs:
           python3 ops/tools/test_pii_scan.py
           python3 ops/tools/test_dispatch.py
           python3 ops/tools/test_import_inbox.py
+          python3 ops/tools/test_jobkey.py
+          python3 ops/tools/test_raw_append.py
+          python3 ops/tools/test_token_audit.py
+          python3 ops/tools/test_jd_archive_names.py
+          python3 ops/tools/test_jd_archive_fixnames.py
       - name: discover package
         run: |
           python3 -m pip install -q pytest
