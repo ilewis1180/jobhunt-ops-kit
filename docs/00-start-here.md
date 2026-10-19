@@ -26,7 +26,9 @@ answers file (`ANSWERS-PRIVATE.md`, git-ignored; template in `docs/templates/`) 
 | `09-parallel-apply.md` | Phase 3 as one orchestrator plus up to five lanes on one dispatch board | apply (parallel) |
 | `10-discover.md` | Phase 0: the job-search tools, review file, apply-link agent, `JT-` keys | discover |
 | `11-data-model.md` | Every sheet tab and CSV with its columns; the vocabulary the dashboard reads | tools, dashboard |
-| `ops/tools/` | `dispatch.py` (board), `queue_api.py` / `jd_archive_api.py` (Sheets API), `preflight.py`, `intent_check.py`, `pii_scan.py`, `trace.py`, `import-inbox.py`, `build-question-bank.py`, `mail_track.py`, `token_audit.py`, `lane-windows.sh`, `backup.sh`; see `ops/tools/README.md` | apply (parallel) |
+| `roles/ROLE-{scrape,prep,orch,lane,discover}.md` | One operating card per session role: the minimum a session reads, with pointers into the numbered docs | the matching phase, first |
+| `CHANGELOG.md` (repo root) | Version history of the playbooks, out of the read path | curation only |
+| `ops/tools/` | `dispatch.py` (board), `queue_api.py` / `jd_archive_api.py` (Sheets API), `preflight.py`, `intent_check.py`, `pii_scan.py`, `trace.py`, `import-inbox.py`, `build-question-bank.py`, `mail_track.py`, `token_audit.py`, `jobkey.py`, `raw_append.py`, `lane-windows.sh`, `backup.sh`; see `ops/tools/README.md` | apply (parallel) |
 | `AppApply-Capture/` (data) | traces, page captures, question bank, outcomes, proof, per-ATS recipes | apply |
 | **Job Queue** (Google Sheet) | Tabs **Queue** (one row per job, the status block) and **Raw** (append-only scrape data) | all |
 | **JD Archive** (Google Sheet) | Full job descriptions by Job ID, append-only | apply, jd |
@@ -42,11 +44,11 @@ orchestrator plus its lanes) counts as one run.
 
 | Operator says | Phase | Operator present? | Do this |
 |---|---|---|---|
-| `phase 0`, `discover` | 0 Discover | yes, for the review | `10-discover.md`. Run ID `…-discover`. |
-| `phase 1`, `scrape` | 1 Scrape | no | `05-scrape.md`. Run ID `…-scrape`. |
-| `phase 2`, `prep` | 2 Prep | no | 07 Block 1 on every Queue row whose Apply? is not `No`. Run ID `…-prep`. Writes PREP cards, never types into a form. |
-| `phase 3`, `apply`, `approve` | 3 Approve and submit, **always parallel: this session is the orchestrator** | yes | `09-parallel-apply.md` §4 and 07 Block 3. Run ID `…-orch`. It starts the lanes, never fills a form, and is the only Queue writer. |
-| `phase 3 lane N (orchestrator <RunID>)` | 3, lane N (1–5) | yes | 09 §4 lane steps 1–8 first, then the reading list; 07 Block 4. Run ID `…-apply<N>`. |
+| `phase 0`, `discover` | 0 Discover | yes, for the review | Read `roles/ROLE-discover.md`, then the `10-discover.md` sections it names. Run ID `…-discover`. Rows go to Raw through `raw_append.py`. |
+| `phase 1`, `scrape` | 1 Scrape | no | Read `roles/ROLE-scrape.md`, then the `05-scrape.md` sections it names. Run ID `…-scrape`. Raw append through `raw_append.py`. |
+| `phase 2`, `prep` | 2 Prep | no | Read `roles/ROLE-prep.md` (also the brief for parallel prep workers), then 07 Block 1 on every Queue row whose Apply? is not `No`. Run ID `…-prep`. Writes PREP cards, never types into a form. |
+| `phase 3`, `apply`, `approve` | 3 Approve and submit, **always parallel: this session is the orchestrator** | yes | Read `roles/ROLE-orch.md`, then `09-parallel-apply.md` §4 and §7–§8 and 07 Block 3. Run ID `…-orch`. It starts the lanes, never fills a form, and is the only Queue writer. |
+| `phase 3 lane N (orchestrator <RunID>)` | 3, lane N (1–5) | yes | 09 §4 lane steps 1–8 first (window proof before any long read), then `roles/ROLE-lane.md` and the answers file in full; other docs only at the section the card points to. Lanes live long: a HANDOFF note and a compaction after each round. Run ID `…-apply<N>`. |
 | `phase 3 logins` | login-only session | yes | 09 §4 "Login-only session": board, preflight, the tenant list; the operator signs in once per tenant. Run ID `…-logins`. |
 | `phase 3 single` | 3 in one session (fallback, only when asked) | yes | 07 Block 2 with the 08 capture. Run ID `…-apply`. |
 | `jd` | JD backfill | no | `06-jd-archive.md`. |
@@ -64,6 +66,8 @@ Unclear → ask.
 - At session end: `RUN-SUMMARY-<RunID>.md` (what was done, counts, what the next session must fix, what waits on the
   operator), `LEARNINGS-<RunID>.md` (quirks, proposed rule changes), the 08 appends, a log entry, a git commit.
 - The playbooks are not edited during a run. Propose changes in `LEARNINGS-<RunID>.md`; a curation session applies them.
+- **Role cards** (`docs/roles/`) are the minimum a session reads. If a card and a numbered doc disagree, the numbered
+  doc wins; note it in LEARNINGS. Version history of every doc lives in `CHANGELOG.md`; the docs keep one version line.
 
 ## Apply mode — session start (07 Block 2 single session; the orchestrator and lanes follow 09 §4 instead)
 

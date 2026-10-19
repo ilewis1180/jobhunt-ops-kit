@@ -47,6 +47,8 @@ Proof is for the operator to check what was submitted, so personal values and fr
 - **Never** use proof images as training data or fixtures, never copy them into `dom/`, `pages/`, `recipes/` or a
   trace. Never put a credential on screen for a proof image.
 - A dashboard may show proof in the audit trail (mirrored read-only).
+- **Proof is mandatory:** `dispatch.py event … submitted` refuses without `--proof <one of these files>` for this
+  attempt, and refuses when no OUTCOME fragment is staged afterwards. Capture is never optional.
 
 ## §2 The trace line (JSONL, one object per action)
 

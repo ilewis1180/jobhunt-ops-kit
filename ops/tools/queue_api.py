@@ -15,7 +15,8 @@ token must stay outside the repo (00 hard rule 8).
 Sheets API only, Job Queue only: the one spreadsheet ID comes from config.toml [sheets] job_queue_id, and any other
 is refused. The token is refreshed with the drive scope alone, so the access token in use carries no Gmail, Calendar,
 Contacts or Tasks access (a token granted only `drive` works; `spreadsheets` would be narrower if your token has it).
-dispatch.py uses this for `--queue api` and `queue-plan --apply`.
+dispatch.py uses this for `--queue api` and `queue-plan --apply`; tools/raw_append.py uses values_get / raw_append_rows /
+raw_format_dates (Raw tab: read and append only, RAW input mode).
 """
 import datetime, json, os, re, stat, sys, time, urllib.error, urllib.parse, urllib.request
 
@@ -176,6 +177,49 @@ def write_cells(cells, run_id, apply=False, sid=None):
         return False
     print(f'written and read back: {len(plan)} cell(s), neighbours unchanged · log {os.path.relpath(log, REPO)}')
     return True
+
+
+# ---------- Raw tab: read and append-only (tools/raw_append.py) ----------
+RAW_TAB = 'Raw'
+RAW_HEADER = ['Tracker Stage', 'LinkedIn Job ID', 'LinkedIn Job URL', 'Job Title', 'Company', 'Company LinkedIn URL',
+              'Aggregator', 'Location', 'Work Mode', 'Employment Type', 'Seniority Level', 'Status Raw', 'Posting Type',
+              'Posted Date', 'Easy Apply', 'Real Apply URL', 'Apply Domain', 'ATS Guess', 'Company Careers URL',
+              'Salary Raw', 'Applicant Count', 'Hiring Team Name', 'Hiring Team Title', 'Hiring Team URL',
+              'Job Description', 'Snapshot Date', 'Flags']
+
+
+def values_get(rng, render='UNFORMATTED_VALUE', sid=None):
+    """Read-only: the values of one A1 range of the Job Queue spreadsheet (dates as serial numbers)."""
+    q = urllib.parse.urlencode({'valueRenderOption': render, 'dateTimeRenderOption': 'SERIAL_NUMBER'})
+    return _call('GET', f'{_base(sid or sheet_id())}/values/{urllib.parse.quote(rng)}?{q}').get('values', [])
+
+
+def raw_append_rows(rows, sid=None):
+    """Append rows under the last Raw row with valueInputOption=RAW (a string is never parsed: "=..." stays text).
+    Callers pass typed values (int for a numeric Job ID or a date serial). Returns the API's updatedRange."""
+    if not rows or any(len(r) != len(RAW_HEADER) for r in rows):
+        die(f'raw_append_rows: every row must have {len(RAW_HEADER)} values')
+    rng = urllib.parse.quote(f'{RAW_TAB}!A1')
+    res = _call('POST', f'{_base(sid or sheet_id())}/values/{rng}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',
+                {'values': rows})
+    return res.get('updates', {}).get('updatedRange', '')
+
+
+def raw_format_dates(first_row, last_row, cols, sid=None):
+    """Give Raw cells in `cols` (letters) of rows first..last the DATE yyyy-mm-dd format the scrape rows carry."""
+    sid = sid or sheet_id()
+    meta = _call('GET', f'{_base(sid)}?fields=sheets.properties(sheetId,title)')
+    gid = next((s['properties']['sheetId'] for s in meta['sheets'] if s['properties']['title'] == RAW_TAB), None)
+    if gid is None:
+        die('Raw tab not found')
+    reqs = []
+    for c in cols:
+        ci = next(i for i in range(len(RAW_HEADER)) if col_letter(i) == c)
+        reqs.append({'repeatCell': {'range': {'sheetId': gid, 'startRowIndex': first_row - 1, 'endRowIndex': last_row,
+                                              'startColumnIndex': ci, 'endColumnIndex': ci + 1},
+                                    'cell': {'userEnteredFormat': {'numberFormat': {'type': 'DATE', 'pattern': 'yyyy-mm-dd'}}},
+                                    'fields': 'userEnteredFormat.numberFormat'}})
+    _call('POST', f'{_base(sid)}:batchUpdate', {'requests': reqs})
 
 
 def main():

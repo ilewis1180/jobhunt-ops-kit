@@ -19,7 +19,7 @@ inbox_dir = ""
 # Backup target for ops/tools/backup.sh (a cloud-synced folder works) and its log.
 backup_dir = ""
 backup_log = "~/Library/Logs/jobhunt-ops-backup.log"
-# Claude Code transcripts for token_audit.py / usage_report.py. The project folder name is derived from your
+# Claude Code transcripts for token_audit.py (its --write-usage writes the dashboard's USAGE feed). The project folder name is derived from your
 # working directory, e.g. "-Users-<you>-jobhunt-ops-kit".
 transcripts_glob = "~/.claude/projects/-Users-<you>-<project>*/*.jsonl"
 
@@ -42,6 +42,11 @@ lane_tab_url = "https://example.com/"
 timezone = "UTC"
 # First day of your Queue era: mail threads older than this are never listed for review by mail_track.py.
 queue_era_start = "2026-01-01"
+
+[capture]
+# Proof screenshots a lane saves before `dispatch.py event … submitted` (08 §1.1). The folder is fixed
+# (AppApply-Capture/proof/<RunID>/ under the data root); this is the image format lanes save, png or jpg.
+proof_format = "png"
 
 [dashboard]
 # Where the dashboard host receives the ops mirror (informational; the sync itself is Syncthing or similar).

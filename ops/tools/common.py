@@ -213,18 +213,16 @@ def slug(s, limit=80):
 
 
 def company_key(name):
-    """A company name reduced to a comparable key: lowercase slug with trailing legal suffixes removed."""
-    words = slug(name).split('-')
-    while len(words) > 1 and words[-1] in COMPANY_SUFFIXES:
-        words.pop()
-    return '-'.join(words)
+    """One employer = one key (lock and group names): jobkey.company_key, the shared rule."""
+    import jobkey
+    return jobkey.company_key(name)
 
 
 def job_tools_key(company, title, location):
-    """The JT- key for a job the search tools found: JT- plus the first 10 hex of SHA-1 over normalised
-    company|title|location (lowercase, punctuation stripped, whitespace collapsed)."""
-    raw = '|'.join(normalize_text(x) for x in (company, title, location))
-    return 'JT-' + hashlib.sha1(raw.encode('utf-8')).hexdigest()[:10]
+    """The JT- key for a job the search tools found: jobkey.jt_key (JT- plus the first 10 hex of SHA-1 over
+    normalised company|title|location). jobkey.job_key applies the full rule: a LinkedIn number wins when known."""
+    import jobkey
+    return jobkey.jt_key(company, title, location)
 
 
 # ---------- small shared functions ----------

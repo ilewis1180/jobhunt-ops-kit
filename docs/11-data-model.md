@@ -18,9 +18,10 @@ Source URL, Characters, Notes, Full Job Description`.
 ## Job ids and keys
 
 `\d{8,}` (LinkedIn posting number) or `JT-[0-9a-f]{10}` (jobs found by the search tools with no LinkedIn number; SHA-1
-of normalised `company|title|location`, first 10 hex; `common.job_tools_key`). `jt-keys.csv`:
-`jt_key,board,board_id,company,title,first_seen_run` maps a JT- key to the board's own id so the same job found twice
-is caught. Attempt id: `<job_id>-a<N>`. Run id: `R<YYYYMMDD>-<HHMM>-<kind>`.
+of normalised `company|title|location`, first 10 hex; `ops/tools/jobkey.py`). **One key per job:** the LinkedIn
+number whenever one is known (`jobkey.job_key` reads it from the job URL), else `JT-`. `jt-keys.csv`:
+`jt_key,board,board_id,company,title,first_seen_run,location` maps a JT- key to the board's own id (a LinkedIn number
+in `board_id` makes the two keys aliases of one job; `jobkey.aliases()`, `raw_append.py`). Attempt id: `<job_id>-a<N>`. Run id: `R<YYYYMMDD>-<HHMM>-<kind>`.
 
 ## Capture CSVs (`AppApply-Capture/`)
 
@@ -69,11 +70,13 @@ last_from, last_body, sender_domain` with `status` ∈ `received` (confirmation 
 write only company, status, dates and thread ids. `<mail_export_dir>/export-status.json`: `{"exported_at":
 "YYYY-MM-DDTHH:MM:SSZ"}`; an export older than 2 hours is reported STALE.
 
-## Token usage feed (`Runs/<date>/USAGE-<OrchRunID>.csv`, 16 columns; `usage_report.py`)
+## Token usage feed (`Runs/<date>/USAGE-<OrchRunID>.csv`, 16 columns; `token_audit.py --write-usage`)
 
 `run_id, phase, session, session_run_id, model, started_at, updated_at, input_tokens, output_tokens,
 cache_creation_tokens, cache_read_tokens, jobs_attempted, jobs_submitted, weekly_pct_start, weekly_pct_now,
-weekly_resets_at`. One row per session of the run (`orch`, `lane<N>-<HHMM>`); rewritten atomically at checkpoints.
+weekly_resets_at`. One row per session of the run (`orch`, later hand-off sessions `orch-<HHMM>`, `lane<N>-<HHMM>`); rewritten
+atomically at checkpoints while the run day lasts, write-once after. `jobs_attempted` / `jobs_submitted` per lane come
+from `outcomes.csv` + `outcomes-jt.csv`; the weekly-% columns are typed in by the operator (`--weekly-*`).
 
 **Token audit** (`token_audit.py`): `TOKEN-AUDIT-sessions-*.csv` (one row per transcript: phase, run id guess, turns,
 tool calls, screenshots, the four token counts, a scrubbed first line), `-by-phase`, `-by-run`, `-by-tool`.
