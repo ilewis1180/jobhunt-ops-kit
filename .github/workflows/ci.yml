@@ -19,7 +19,7 @@ jobs:
         run: |
           set -e
           hits=0
-          for s in 'man''who' 'east''endpc' '100.65.' 'Imman''uel' 'Lew''is' 'Man''ny'; do
+          for s in 'man''who' 'east''endpc' '100.6''5.' 'Imman''uel' 'Lew''is' 'Man''ny'; do
             if grep -rnI --exclude-dir=.git -F -- "$s" . ; then hits=1; fi
           done
           test "$hits" -eq 0
@@ -45,7 +45,8 @@ jobs:
         run: |
           python3 -m pip install -q pytest
           python3 -m pytest -q discover/tests
-      - name: dashboard
+      - name: dashboard (needs Python 3.10+)
+        if: matrix.python != '3.9'
         run: |
           python3 -m pip install -q -r dashboard/requirements-dev.txt
           python3 -m pytest -q dashboard/tests
